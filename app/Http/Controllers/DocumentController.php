@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Document;
 use App\Models\Category;
 use App\Models\ActivityLog;
+use App\Models\SiteSetting;
 use App\Services\OcrService;
+use App\Services\KlasifikasiKemendagriService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +18,10 @@ class DocumentController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private OcrService $ocrService) {}
+    public function __construct(
+        private OcrService $ocrService,
+        private KlasifikasiKemendagriService $kemendagriService
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -58,6 +63,12 @@ class DocumentController extends Controller
                 'file_type' => $doc->file_type,
                 'file_size_formatted' => $doc->file_size_formatted,
                 'is_image' => $doc->is_image,
+                'is_pdf' => $doc->is_pdf,
+                'is_word' => $doc->is_word,
+                'is_text' => $doc->is_text,
+                'file_extension' => $doc->file_extension,
+                'kode_klasifikasi' => $doc->kode_klasifikasi,
+                'verification_code' => $doc->verification_code,
                 'document_date' => $doc->document_date?->format('d M Y'),
                 'uploader' => $doc->uploader?->name,
                 'ocr_processed' => $doc->ocr_processed,
@@ -75,6 +86,7 @@ class DocumentController extends Controller
 
         return Inertia::render('Documents/Create', [
             'categories' => Category::root()->active()->with('children:id,name,name_en,parent_id')->get(['id', 'name', 'name_en', 'color', 'icon']),
+            'kemendagri_list' => $this->kemendagriService->getAll(),
         ]);
     }
 
@@ -85,20 +97,33 @@ class DocumentController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'nomor_surat' => 'nullable|string|max:100',
+            'kode_klasifikasi' => 'nullable|string|max:30',
             'category_id' => 'required|exists:categories,id',
             'subcategory_id' => 'nullable|exists:categories,id',
             'document_date' => 'nullable|date',
             'description' => 'nullable|string|max:1000',
-            'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:20480',
+            'file' => 'required|file|mimes:jpg,jpeg,png,webp,pdf,docx,doc,txt,csv,rtf|max:20480',
             'ocr_text' => 'nullable|string',
         ]);
 
         $file = $request->file('file');
         $path = $file->store('documents/' . date('Y/m'), 'local');
 
+        $ocrText = $request->ocr_text;
+        $fullStoredPath = Storage::disk('local')->path($path);
+
+        // Auto-extract text natively if OCR text was not sent from preview
+        if (empty($ocrText) && file_exists($fullStoredPath)) {
+            $autoExtract = $this->ocrService->extractText($fullStoredPath, $file->getClientOriginalName());
+            if (!empty($autoExtract['success']) && !empty($autoExtract['text'])) {
+                $ocrText = $autoExtract['text'];
+            }
+        }
+
         $document = Document::create([
             'title' => $request->title,
             'nomor_surat' => $request->nomor_surat,
+            'kode_klasifikasi' => $request->kode_klasifikasi,
             'category_id' => $request->category_id,
             'subcategory_id' => $request->subcategory_id,
             'document_date' => $request->document_date,
@@ -107,9 +132,9 @@ class DocumentController extends Controller
             'file_original_name' => $file->getClientOriginalName(),
             'file_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'ocr_text' => $request->ocr_text,
-            'ocr_processed' => !empty($request->ocr_text),
-            'ocr_processed_at' => !empty($request->ocr_text) ? now() : null,
+            'ocr_text' => $ocrText,
+            'ocr_processed' => !empty($ocrText),
+            'ocr_processed_at' => !empty($ocrText) ? now() : null,
             'uploaded_by' => auth()->id(),
             'status' => 'aktif',
         ]);
@@ -130,6 +155,9 @@ class DocumentController extends Controller
                 'id' => $document->id,
                 'title' => $document->title,
                 'nomor_surat' => $document->nomor_surat,
+                'kode_klasifikasi' => $document->kode_klasifikasi,
+                'verification_code' => $document->verification_code,
+                'verification_url' => route('documents.verify', $document->verification_code ?? 'none'),
                 'category' => $document->category,
                 'subcategory' => $document->subcategory,
                 'file_type' => $document->file_type,
@@ -138,6 +166,13 @@ class DocumentController extends Controller
                 'file_url' => route('documents.file', $document),
                 'is_image' => $document->is_image,
                 'is_pdf' => $document->is_pdf,
+                'is_word' => $document->is_word,
+                'is_text' => $document->is_text,
+                'file_extension' => $document->file_extension,
+                'can_extract_text' => $document->can_extract_text,
+                'text_preview' => $document->is_text && Storage::disk('local')->exists($document->file_path)
+                    ? mb_substr(Storage::disk('local')->get($document->file_path), 0, 10000)
+                    : null,
                 'ocr_text' => $document->ocr_text,
                 'ocr_processed' => $document->ocr_processed,
                 'description' => $document->description,
@@ -146,6 +181,12 @@ class DocumentController extends Controller
                 'updater' => $document->updater?->name,
                 'created_at' => $document->created_at->format('d M Y H:i'),
                 'updated_at' => $document->updated_at->format('d M Y H:i'),
+            ],
+            'enable_document_qr' => (bool) SiteSetting::get('enable_document_qr', true),
+            'desa' => [
+                'nama' => SiteSetting::get('desa_name', 'Desa Sukarami'),
+                'kecamatan' => SiteSetting::get('kecamatan', 'Rambang'),
+                'kabupaten' => SiteSetting::get('kabupaten', 'Muara Enim'),
             ],
             'can' => [
                 'update' => auth()->user()->can('update', $document),
@@ -161,6 +202,7 @@ class DocumentController extends Controller
         return Inertia::render('Documents/Edit', [
             'document' => $document->load(['category', 'subcategory']),
             'categories' => Category::root()->active()->with('children:id,name,name_en,parent_id')->get(['id', 'name', 'name_en', 'color', 'icon']),
+            'kemendagri_list' => $this->kemendagriService->getAll(),
         ]);
     }
 
@@ -171,6 +213,7 @@ class DocumentController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'nomor_surat' => 'nullable|string|max:100',
+            'kode_klasifikasi' => 'nullable|string|max:30',
             'category_id' => 'required|exists:categories,id',
             'subcategory_id' => 'nullable|exists:categories,id',
             'document_date' => 'nullable|date',
@@ -181,6 +224,7 @@ class DocumentController extends Controller
         $document->update([
             'title' => $request->title,
             'nomor_surat' => $request->nomor_surat,
+            'kode_klasifikasi' => $request->kode_klasifikasi,
             'category_id' => $request->category_id,
             'subcategory_id' => $request->subcategory_id,
             'document_date' => $request->document_date,
@@ -245,7 +289,7 @@ class DocumentController extends Controller
             return response()->json(['success' => false, 'error' => 'File tidak ditemukan'], 404);
         }
 
-        $result = $this->ocrService->extractText($filePath);
+        $result = $this->ocrService->extractText($filePath, $document->file_original_name);
 
         if ($result['success']) {
             $document->update([

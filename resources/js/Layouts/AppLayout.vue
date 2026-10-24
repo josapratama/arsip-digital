@@ -100,6 +100,15 @@ const pageConfig = computed(() => {
                 },
             ],
         },
+        "documents.batch.create": {
+            title: id ? "Unggah Masal Dokumen" : "Batch Upload Documents",
+            crumbs: [
+                {
+                    label: id ? "Dokumen" : "Documents",
+                    href: route("documents.index"),
+                },
+            ],
+        },
         "documents.show": {
             title: id ? "Detail Dokumen" : "Document Detail",
             crumbs: [
@@ -304,11 +313,46 @@ const showLogoutModal = ref(false);
             </nav>
 
             <div
-                class="absolute bottom-0 left-0 right-0 p-3 border-t border-slate-200 dark:border-slate-700"
+                class="absolute bottom-0 left-0 right-0 p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
             >
+                <!-- Quick Language & Theme switch inside sidebar for mobile drawer -->
+                <div class="flex items-center justify-between px-3 py-2 mb-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl text-xs">
+                    <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
+                        <Globe class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        {{ t("Bahasa", "Language") }}
+                    </span>
+                    <div class="flex items-center gap-1">
+                        <button
+                            type="button"
+                            @click="setLocale('id')"
+                            :class="[
+                                'px-2 py-0.5 rounded-md text-[11px] font-bold transition-all',
+                                locale === 'id'
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                            ]"
+                        >
+                            ID
+                        </button>
+                        <span class="text-slate-300 dark:text-slate-600">|</span>
+                        <button
+                            type="button"
+                            @click="setLocale('en')"
+                            :class="[
+                                'px-2 py-0.5 rounded-md text-[11px] font-bold transition-all',
+                                locale === 'en'
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                            ]"
+                        >
+                            EN
+                        </button>
+                    </div>
+                </div>
+
                 <Link
                     :href="route('profile.edit')"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                    class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
                     @click="sidebarOpen = false"
                 >
                     <div
@@ -401,19 +445,21 @@ const showLogoutModal = ref(false);
                     </div>
 
                     <!-- Right controls -->
-                    <div class="flex items-center gap-1 shrink-0">
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <!-- Universal Language Switcher Button (Always visible on mobile & desktop) -->
                         <button
                             @click="toggleLocale"
-                            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            :title="locale === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'"
+                            class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all shadow-xs"
                         >
-                            <Globe class="w-4 h-4" />
-                            <span class="hidden sm:inline">{{
-                                locale === "id" ? "ID" : "EN"
-                            }}</span>
+                            <Globe class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span class="font-bold text-xs tracking-wider uppercase font-mono">
+                                {{ locale === "id" ? "ID" : "EN" }}
+                            </span>
                         </button>
                         <button
                             @click="toggleTheme"
-                            class="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            class="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                         >
                             <Sun v-if="isDark" class="w-4.5 h-4.5" />
                             <Moon v-else class="w-4.5 h-4.5" />

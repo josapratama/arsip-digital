@@ -19,13 +19,14 @@ import axios from "axios";
 import { parseOcrText } from "@/utils/ocrParser.js";
 import { useI18n } from "@/useI18n.js";
 
-const props = defineProps({ categories: Array });
+const props = defineProps({ categories: Array, kemendagri_list: Array });
 
 const { t } = useI18n();
 
 const form = useForm({
     title: "",
     nomor_surat: "",
+    kode_klasifikasi: "",
     category_id: "",
     subcategory_id: "",
     document_date: "",
@@ -38,6 +39,28 @@ const filePreview = ref(null);
 const isDragging = ref(false);
 const ocrLoading = ref(false);
 const ocrDone = ref(false);
+
+const isImageFile = computed(() => {
+    if (!form.file) return false;
+    return form.file.type.startsWith("image/");
+});
+
+const isPdfFile = computed(() => {
+    if (!form.file) return false;
+    return form.file.type === "application/pdf" || form.file.name.toLowerCase().endsWith(".pdf");
+});
+
+const isWordFile = computed(() => {
+    if (!form.file) return false;
+    const name = form.file.name.toLowerCase();
+    return name.endsWith(".docx") || name.endsWith(".doc") || form.file.type.includes("word");
+});
+
+const isTextFile = computed(() => {
+    if (!form.file) return false;
+    const name = form.file.name.toLowerCase();
+    return name.endsWith(".txt") || name.endsWith(".csv") || name.endsWith(".rtf") || form.file.type.startsWith("text/");
+});
 
 const selectedCategory = computed(() =>
     props.categories?.find((c) => c.id == form.category_id),
@@ -60,13 +83,16 @@ function handleFile(file) {
     // Reset previous document values so stale data doesn't persist
     form.title = "";
     form.nomor_surat = "";
+    form.kode_klasifikasi = "";
     form.document_date = "";
     form.description = "";
 
+    kemendagriDetected.value = null;
     autoFilled.value = {
         title: false,
         nomor_surat: false,
         document_date: false,
+        kode_klasifikasi: false,
     };
 
     if (file.type.startsWith("image/")) {
@@ -75,14 +101,20 @@ function handleFile(file) {
             filePreview.value = e.target.result;
         };
         reader.readAsDataURL(file);
-        processOcr();
-    } else if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+    } else if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
         filePreview.value = URL.createObjectURL(file);
-        processOcr();
+    } else if (file.name.toLowerCase().endsWith(".txt") || file.name.toLowerCase().endsWith(".csv") || file.type.startsWith("text/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            filePreview.value = e.target.result;
+        };
+        reader.readAsText(file);
     } else {
         filePreview.value = null;
-        ocrDone.value = true;
     }
+
+    // Trigger text extraction / OCR for all supported document types
+    processOcr();
 }
 
 function onFileChange(e) {
@@ -92,10 +124,7 @@ function onFileChange(e) {
 function onDrop(e) {
     isDragging.value = false;
     const file = e.dataTransfer.files[0];
-    if (
-        file &&
-        (file.type.startsWith("image/") || file.type === "application/pdf" || file.name.endsWith(".pdf"))
-    ) {
+    if (file) {
         handleFile(file);
     }
 }
@@ -112,13 +141,16 @@ function removeFile() {
     // Clear form fields
     form.title = "";
     form.nomor_surat = "";
+    form.kode_klasifikasi = "";
     form.document_date = "";
     form.description = "";
 
+    kemendagriDetected.value = null;
     autoFilled.value = {
         title: false,
         nomor_surat: false,
         document_date: false,
+        kode_klasifikasi: false,
     };
 }
 
@@ -139,8 +171,41 @@ async function processOcr() {
         if (res.data.success) {
             form.ocr_text = res.data.text;
             ocrDone.value = true;
+
+            // Apply backend metadata if available
+            if (res.data.metadata) {
+                if (res.data.metadata.title && !form.title) {
+                    form.title = res.data.metadata.title;
+                    autoFilled.value.title = true;
+                }
+                if (res.data.metadata.nomor_surat && !form.nomor_surat) {
+                    form.nomor_surat = res.data.metadata.nomor_surat;
+                    autoFilled.value.nomor_surat = true;
+                }
+                if (res.data.metadata.document_date && !form.document_date) {
+                    form.document_date = res.data.metadata.document_date;
+                    autoFilled.value.document_date = true;
+                }
+            }
+
+            // Kemendagri auto-suggestion
+            if (res.data.kemendagri) {
+                kemendagriDetected.value = res.data.kemendagri;
+                if (!form.kode_klasifikasi && res.data.kemendagri.kode) {
+                    form.kode_klasifikasi = res.data.kemendagri.kode;
+                    autoFilled.value.kode_klasifikasi = true;
+                }
+                // Auto-map category if not chosen yet
+                if (!form.category_id && res.data.kemendagri.category_id) {
+                    form.category_id = res.data.kemendagri.category_id;
+                    if (res.data.kemendagri.subcategory_id) {
+                        form.subcategory_id = res.data.kemendagri.subcategory_id;
+                    }
+                }
+            }
+
             // Auto-detect & pre-fill fields from OCR text
-            autoFillFromOcr(res.data.text, true);
+            autoFillFromOcr(res.data.text, false);
         } else {
             ocrError.value = res.data.error || t("OCR gagal.", "OCR failed.");
         }
@@ -159,16 +224,12 @@ const autoFilled = ref({
     title: false,
     nomor_surat: false,
     document_date: false,
+    kode_klasifikasi: false,
 });
+const kemendagriDetected = ref(null);
 
 function autoFillFromOcr(text, overwrite = true) {
     const detected = parseOcrText(text);
-    autoFilled.value = {
-        title: false,
-        nomor_surat: false,
-        document_date: false,
-    };
-
     if (detected.judul && (overwrite || !form.title)) {
         form.title = detected.judul;
         autoFilled.value.title = true;
@@ -239,13 +300,13 @@ function submit() {
                                 <input
                                     type="file"
                                     class="hidden"
-                                    accept=".jpg,.jpeg,.png,.pdf"
+                                    accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.doc,.txt,.csv,.rtf"
                                     @change="onFileChange"
                                 />
                             </label>
                         </p>
                         <p class="text-xs text-slate-400 mt-2">
-                            JPG · PNG · PDF &mdash;
+                            JPG · PNG · WEBP · PDF · DOCX · TXT &mdash;
                             {{ t("Maks. 20MB", "Max 20MB") }}
                         </p>
                     </div>
@@ -262,17 +323,19 @@ function submit() {
                     >
                         <div
                             class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                            :class="
-                                form.file.type.startsWith('image/')
-                                    ? 'bg-primary-100 dark:bg-primary-900/30'
-                                    : 'bg-rose-100 dark:bg-rose-900/30'
-                            "
+                            :class="{
+                                'bg-primary-100 dark:bg-primary-900/30 text-primary-600': isImageFile,
+                                'bg-rose-100 dark:bg-rose-900/30 text-rose-600': isPdfFile,
+                                'bg-blue-100 dark:bg-blue-900/30 text-blue-600': isWordFile,
+                                'bg-amber-100 dark:bg-amber-900/30 text-amber-600': isTextFile,
+                            }"
                         >
                             <Image
-                                v-if="form.file.type.startsWith('image/')"
-                                class="w-4.5 h-4.5 text-primary-600"
+                                v-if="isImageFile"
+                                class="w-4.5 h-4.5"
                             />
-                            <File v-else class="w-4.5 h-4.5 text-rose-600" />
+                            <span v-else-if="isWordFile" class="font-bold text-sm">W</span>
+                            <File v-else class="w-4.5 h-4.5" />
                         </div>
                         <div class="flex-1 min-w-0">
                             <p
@@ -344,19 +407,44 @@ function submit() {
                             class="p-4 border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-700"
                         >
                             <!-- Image preview -->
+                            <!-- Image preview -->
                             <img
-                                v-if="form.file.type.startsWith('image/') && filePreview"
+                                v-if="isImageFile && filePreview"
                                 :src="filePreview"
                                 alt="Preview"
                                 class="w-full rounded-xl object-contain bg-slate-100 dark:bg-slate-900 max-h-72"
                             />
                             <!-- PDF preview iframe -->
                             <iframe
-                                v-else-if="filePreview"
+                                v-else-if="isPdfFile && filePreview"
                                 :src="filePreview"
                                 class="w-full rounded-xl bg-slate-100 dark:bg-slate-900 h-72 border-0"
                             ></iframe>
-                            <!-- PDF placeholder fallback -->
+                            <!-- Text preview -->
+                            <div
+                                v-else-if="isTextFile && filePreview"
+                                class="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl font-mono text-xs whitespace-pre-wrap max-h-72 overflow-y-auto border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200"
+                            >
+                                {{ filePreview }}
+                            </div>
+                            <!-- Word Document preview banner -->
+                            <div
+                                v-else-if="isWordFile"
+                                class="flex items-center gap-4 p-5 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800/60"
+                            >
+                                <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
+                                    W
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                                        Microsoft Word Document (.docx)
+                                    </h4>
+                                    <p class="text-xs text-blue-700 dark:text-blue-300/80 mt-0.5">
+                                        {{ t("Teks digital akan otomatis diekstrak langsung tanpa proses OCR gambar.", "Digital text will be extracted natively without image OCR processing.") }}
+                                    </p>
+                                </div>
+                            </div>
+                            <!-- Placeholder fallback -->
                             <div
                                 v-else
                                 class="flex flex-col items-center justify-center py-10 bg-slate-50 dark:bg-slate-900 rounded-xl"
@@ -365,7 +453,7 @@ function submit() {
                                     class="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2"
                                 />
                                 <p class="text-xs text-slate-400">
-                                    PDF Document
+                                    {{ form.file?.name }}
                                 </p>
                             </div>
 
@@ -508,7 +596,8 @@ function submit() {
                                         ocrDone &&
                                         (autoFilled.title ||
                                             autoFilled.nomor_surat ||
-                                            autoFilled.document_date)
+                                            autoFilled.document_date ||
+                                            autoFilled.kode_klasifikasi)
                                     "
                                     class="flex items-start gap-2 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-200 dark:border-primary-800"
                                 >
@@ -520,11 +609,31 @@ function submit() {
                                     >
                                         {{
                                             t(
-                                                "Beberapa field terdeteksi otomatis dari dokumen. Periksa dan koreksi jika diperlukan.",
-                                                "Some fields were auto-detected from the document. Review and correct if needed.",
+                                                "Beberapa field dan kode klasifikasi terdeteksi otomatis dari dokumen. Periksa dan koreksi jika diperlukan.",
+                                                "Some fields and classification code were auto-detected from the document. Review and correct if needed.",
                                             )
                                         }}
                                     </p>
+                                </div>
+
+                                <!-- Rekomendasi Kode Kemendagri -->
+                                <div
+                                    v-if="kemendagriDetected"
+                                    class="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/60 text-xs flex items-center justify-between"
+                                >
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="px-2 py-0.5 rounded font-mono font-bold bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 text-xs">
+                                            {{ kemendagriDetected.kode }}
+                                        </span>
+                                        <div>
+                                            <p class="font-semibold text-amber-900 dark:text-amber-200">
+                                                {{ kemendagriDetected.nama }}
+                                            </p>
+                                            <p class="text-[11px] text-amber-700 dark:text-amber-300/80">
+                                                {{ t("Saran Permendagri terdeteksi dari", "Suggested by Permendagri from") }} {{ kemendagriDetected.alasan }}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Judul -->
@@ -573,8 +682,8 @@ function submit() {
                                     </p>
                                 </div>
 
-                                <!-- Nomor + Tanggal -->
-                                <div class="grid grid-cols-2 gap-3">
+                                <!-- Nomor + Kode Klasifikasi + Tanggal -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
                                         <label
                                             class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
@@ -599,6 +708,41 @@ function submit() {
                                                     : 'border-slate-200 dark:border-slate-600',
                                             ]"
                                         />
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
+                                        >
+                                            {{
+                                                t("Kode Klasifikasi", "Classification Code")
+                                            }}
+                                            <span
+                                                v-if="autoFilled.kode_klasifikasi"
+                                                class="ml-1 text-violet-500"
+                                                >✦</span
+                                            >
+                                        </label>
+                                        <input
+                                            v-model="form.kode_klasifikasi"
+                                            list="kemendagri-create-options"
+                                            type="text"
+                                            placeholder="Contoh: 400.1 / 140"
+                                            :class="[
+                                                'w-full px-3 py-2 text-sm rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500',
+                                                autoFilled.kode_klasifikasi
+                                                    ? 'border-violet-400 dark:border-violet-600 bg-violet-50 dark:bg-violet-900/10'
+                                                    : 'border-slate-200 dark:border-slate-600',
+                                            ]"
+                                        />
+                                        <datalist id="kemendagri-create-options">
+                                            <option
+                                                v-for="k in kemendagri_list"
+                                                :key="k.kode"
+                                                :value="k.kode"
+                                            >
+                                                {{ k.kode }} - {{ k.nama }} ({{ k.bidang }})
+                                            </option>
+                                        </datalist>
                                     </div>
                                     <div>
                                         <label

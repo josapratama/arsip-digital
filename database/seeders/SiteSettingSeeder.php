@@ -72,6 +72,8 @@ class SiteSettingSeeder extends Seeder
             ['key' => 'enable_registration', 'value' => '0', 'type' => 'boolean', 'group' => 'system', 'label' => 'Izinkan Pendaftaran Pengguna Baru', 'sort_order' => 1],
             ['key' => 'ocr_driver', 'value' => 'local', 'type' => 'text', 'group' => 'system', 'label' => 'Mesin Pembaca Teks (OCR)', 'sort_order' => 2],
             ['key' => 'google_vision_api_key', 'value' => '', 'type' => 'text', 'group' => 'system', 'label' => 'Google Cloud Vision API Key', 'sort_order' => 3],
+            ['key' => 'ocr_max_pdf_pages', 'value' => '10', 'type' => 'text', 'group' => 'system', 'label' => 'Maksimal Halaman PDF untuk OCR', 'sort_order' => 4],
+            ['key' => 'enable_document_qr', 'value' => '1', 'type' => 'boolean', 'group' => 'system', 'label' => 'Tampilkan QR Code Verifikasi pada Dokumen (Cetak/Unduh/Detail)', 'sort_order' => 5],
         ];
 
         foreach ($settings as $setting) {

@@ -5,13 +5,18 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import { Save, ArrowLeft, Loader2 } from "lucide-vue-next";
 import { useI18n } from "@/useI18n.js";
 
-const props = defineProps({ document: Object, categories: Array });
+const props = defineProps({
+    document: Object,
+    categories: Array,
+    kemendagri_list: Array,
+});
 
 const { t } = useI18n();
 
 const form = useForm({
     title: props.document.title ?? "",
     nomor_surat: props.document.nomor_surat ?? "",
+    kode_klasifikasi: props.document.kode_klasifikasi ?? "",
     category_id: props.document.category_id ?? "",
     subcategory_id: props.document.subcategory_id ?? "",
     document_date: props.document.document_date
@@ -104,6 +109,30 @@ function submit() {
                                 type="text"
                                 class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                             />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
+                                >{{
+                                    t("Kode Klasifikasi (Kemendagri)", "Classification Code")
+                                }}</label
+                            >
+                            <input
+                                v-model="form.kode_klasifikasi"
+                                list="kemendagri-edit-options"
+                                type="text"
+                                placeholder="Contoh: 400.1 / 140 / 470"
+                                class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                            <datalist id="kemendagri-edit-options">
+                                <option
+                                    v-for="k in kemendagri_list"
+                                    :key="k.kode"
+                                    :value="k.kode"
+                                >
+                                    {{ k.kode }} - {{ k.nama }} ({{ k.bidang }})
+                                </option>
+                            </datalist>
                         </div>
                         <div>
                             <label

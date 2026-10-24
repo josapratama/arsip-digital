@@ -1,10 +1,10 @@
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
-import { Eye, EyeOff, FolderArchive, Sun, Moon, ArrowLeft, ShieldCheck, Sparkles } from 'lucide-vue-next';
+import { Eye, EyeOff, FolderArchive, Sun, Moon, ArrowLeft, ShieldCheck, Sparkles, Globe } from 'lucide-vue-next';
 import { ref } from 'vue';
-import { useI18n } from '@/useI18n.js';
+import { useI18n, setLocale } from '@/useI18n.js';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const showPassword = ref(false);
 const isDark = ref(document.documentElement.classList.contains('dark'));
@@ -13,6 +13,10 @@ function toggleTheme() {
     isDark.value = !isDark.value;
     document.documentElement.classList.toggle('dark', isDark.value);
     localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
+}
+
+function toggleLocale() {
+    setLocale(locale.value === 'id' ? 'en' : 'id');
 }
 
 const form = useForm({
@@ -38,27 +42,37 @@ function fillCredentials(email, pwd) {
         <div class="w-full max-w-md flex items-center justify-between mb-4">
             <Link
                 :href="route('landing')"
-                class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 transition-colors shadow-sm"
+                class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 transition-colors shadow-xs"
             >
                 <ArrowLeft class="w-3.5 h-3.5" />
-                {{ t("Kembali ke Beranda Desa", "Back to Village Home") }}
+                {{ t("Beranda", "Home") }}
             </Link>
 
             <div class="flex items-center gap-2">
+                <!-- Language switcher -->
+                <button
+                    @click="toggleLocale"
+                    :title="t('Ganti Bahasa', 'Change Language')"
+                    class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-primary-500 transition-colors shadow-xs font-mono"
+                >
+                    <Globe class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                    <span>{{ locale.toUpperCase() }}</span>
+                </button>
+
                 <!-- Register link in topbar if enabled by admin -->
                 <Link
                     v-if="$page.props.can_register"
                     :href="route('register')"
-                    class="text-xs font-semibold text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-950/40 bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-xl border border-primary-200 dark:border-primary-800 transition-colors shadow-sm"
+                    class="text-xs font-semibold text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-950/40 bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-xl border border-primary-200 dark:border-primary-800 transition-colors shadow-xs"
                 >
-                    {{ t("Daftar Akun", "Register") }}
+                    {{ t("Daftar", "Register") }}
                 </Link>
 
                 <!-- Theme toggle -->
                 <button
                     @click="toggleTheme"
                     :title="t('Ganti tema', 'Toggle theme')"
-                    class="p-2 rounded-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-sm border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-primary-600 transition-colors"
+                    class="p-2 rounded-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-xs border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-primary-600 transition-colors"
                 >
                     <Sun v-if="isDark" class="w-4 h-4 text-amber-400" />
                     <Moon v-else class="w-4 h-4 text-slate-600" />

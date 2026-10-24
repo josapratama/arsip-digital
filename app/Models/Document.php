@@ -15,6 +15,8 @@ class Document extends Model
     protected $fillable = [
         'title',
         'nomor_surat',
+        'verification_code',
+        'kode_klasifikasi',
         'category_id',
         'subcategory_id',
         'file_path',
@@ -30,6 +32,15 @@ class Document extends Model
         'uploaded_by',
         'updated_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Document $document) {
+            if (empty($document->verification_code)) {
+                $document->verification_code = 'DS-SKR-' . strtoupper(\Illuminate\Support\Str::random(10));
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -105,11 +116,39 @@ class Document extends Model
 
     public function getIsImageAttribute(): bool
     {
-        return str_starts_with($this->file_type, 'image/');
+        return str_starts_with($this->file_type ?? '', 'image/');
     }
 
     public function getIsPdfAttribute(): bool
     {
-        return $this->file_type === 'application/pdf';
+        return ($this->file_type === 'application/pdf')
+            || str_ends_with(strtolower($this->file_original_name ?? ''), '.pdf');
+    }
+
+    public function getIsWordAttribute(): bool
+    {
+        $mime = $this->file_type ?? '';
+        $ext = strtolower(pathinfo($this->file_original_name ?? '', PATHINFO_EXTENSION));
+        return in_array($ext, ['docx', 'doc'])
+            || str_contains($mime, 'wordprocessingml')
+            || str_contains($mime, 'msword');
+    }
+
+    public function getIsTextAttribute(): bool
+    {
+        $mime = $this->file_type ?? '';
+        $ext = strtolower(pathinfo($this->file_original_name ?? '', PATHINFO_EXTENSION));
+        return in_array($ext, ['txt', 'csv', 'rtf', 'md'])
+            || str_starts_with($mime, 'text/');
+    }
+
+    public function getFileExtensionAttribute(): string
+    {
+        return strtolower(pathinfo($this->file_original_name ?? '', PATHINFO_EXTENSION));
+    }
+
+    public function getCanExtractTextAttribute(): bool
+    {
+        return $this->is_image || $this->is_pdf || $this->is_word || $this->is_text;
     }
 }

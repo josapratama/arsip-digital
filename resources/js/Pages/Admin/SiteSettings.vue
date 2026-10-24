@@ -22,15 +22,15 @@ const props = defineProps({
 const { t } = useI18n();
 
 // ── Group config ──────────────────────────────────────────────────────────────
-const groups = [
-    { key: "hero", label: "🖼️  Hero / Banner" },
-    { key: "general", label: "🏘️  Informasi Umum" },
-    { key: "wilayah", label: "🗺️  Batas Wilayah" },
-    { key: "visi_misi", label: "🎯  Visi & Misi" },
-    { key: "sejarah", label: "📜  Sejarah Desa" },
-    { key: "struktur", label: "🏛️  Struktur Organisasi" },
-    { key: "system", label: "⚙️  Sistem & Registrasi" },
-];
+const groups = computed(() => [
+    { key: "hero", label: "🖼️ " + t("Hero / Banner", "Hero / Banner") },
+    { key: "general", label: "🏘️ " + t("Informasi Umum", "General Information") },
+    { key: "wilayah", label: "🗺️ " + t("Batas Wilayah", "Territorial Borders") },
+    { key: "visi_misi", label: "🎯 " + t("Visi & Misi", "Vision & Mission") },
+    { key: "sejarah", label: "📜 " + t("Sejarah Desa", "Village History") },
+    { key: "struktur", label: "🏛️ " + t("Struktur Organisasi", "Organization Structure") },
+    { key: "system", label: "⚙️ " + t("Sistem & Registrasi", "System & Settings") },
+]);
 
 const activeGroup = ref("hero");
 const saving = ref(false);
@@ -642,6 +642,42 @@ function imageUrl(path) {
                                         </button>
                                     </div>
 
+                                    <!-- ENABLE DOCUMENT QR TOGGLE -->
+                                    <div
+                                        v-else-if="s.key === 'enable_document_qr'"
+                                        class="flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50"
+                                    >
+                                        <div class="pr-4">
+                                            <div class="flex items-center gap-2">
+                                                <span
+                                                    class="w-2.5 h-2.5 rounded-full"
+                                                    :class="localValues[s.key] == '1' || localValues[s.key] === true ? 'bg-emerald-500' : 'bg-slate-400'"
+                                                ></span>
+                                                <span class="text-sm font-semibold text-slate-900 dark:text-white">
+                                                    {{ localValues[s.key] == '1' || localValues[s.key] === true ? t("QR Code Aktif (Ditampilkan pada Cetak & Unduh)", "QR Code Active (Shown on Print & Download)") : t("QR Code Nonaktif (Disembunyikan)", "QR Code Disabled (Hidden)") }}
+                                                </span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                                {{
+                                                    localValues[s.key] == '1' || localValues[s.key] === true
+                                                        ? t("QR Code verifikasi keaslian otomatis tercetak pada dokumen dan dapat dipindai publik. Data token tersimpan di database.", "Verification QR code is stamped when printing/downloading. Verification token remains in database.")
+                                                        : t("QR Code tidak akan ditampilkan atau dicetak pada dokumen yang diunduh/dicetak. Kode verifikasi tetap tersimpan aman di database.", "QR code will be hidden when printing or downloading. Verification code remains safely stored in database.")
+                                                }}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            @click="localValues[s.key] = (localValues[s.key] == '1' || localValues[s.key] === true) ? '0' : '1'"
+                                            class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                            :class="(localValues[s.key] == '1' || localValues[s.key] === true) ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'"
+                                        >
+                                            <span
+                                                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                                :class="(localValues[s.key] == '1' || localValues[s.key] === true) ? 'translate-x-5' : 'translate-x-0'"
+                                            />
+                                        </button>
+                                    </div>
+
                                     <!-- OCR DRIVER SELECTOR -->
                                     <div
                                         v-else-if="s.key === 'ocr_driver'"
@@ -729,6 +765,28 @@ function imageUrl(path) {
                                             placeholder="AIzaSy..."
                                             class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                         />
+                                    </div>
+
+                                    <!-- OCR MAX PDF PAGES -->
+                                    <div
+                                        v-else-if="s.key === 'ocr_max_pdf_pages'"
+                                        class="space-y-1.5"
+                                    >
+                                        <div class="flex items-center gap-3">
+                                            <input
+                                                v-model="localValues[s.key]"
+                                                type="number"
+                                                min="1"
+                                                max="50"
+                                                class="w-32 px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                                            />
+                                            <span class="text-xs text-slate-500 dark:text-slate-400">
+                                                {{ t("halaman pertama (Standar: 10 halaman)", "first pages (Default: 10 pages)") }}
+                                            </span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-400">
+                                            {{ t("Menentukan batas maksimal halaman PDF hasil pindai yang di-OCR. Untuk PDF digital, teks akan diekstrak langsung tanpa batas beban OCR.", "Sets maximum number of scanned PDF pages to OCR. Digital PDFs extract text natively.") }}
+                                        </p>
                                     </div>
 
                                     <!-- TEXTAREA -->

@@ -12,9 +12,10 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ── Public: Landing Page ──────────────────────────────────────────────────────
+// ── Public: Landing Page & Document Verification ──────────────────────────
 Route::get('/beranda', [LandingController::class, 'index'])->name('landing');
 Route::redirect('/', '/beranda');
+Route::get('/verify/{code}', [\App\Http\Controllers\DocumentVerificationController::class, 'verify'])->name('documents.verify');
 
 // ── Authenticated routes ───────────────────────────────────────────────────────
 Route::middleware(['auth', 'set.locale'])->group(function () {
@@ -23,6 +24,8 @@ Route::middleware(['auth', 'set.locale'])->group(function () {
 
     // Documents
     Route::get('/documents/export', [DocumentController::class, 'export'])->name('documents.export');
+    Route::get('/documents/batch', [\App\Http\Controllers\DocumentBatchController::class, 'create'])->name('documents.batch.create');
+    Route::post('/documents/batch', [\App\Http\Controllers\DocumentBatchController::class, 'store'])->name('documents.batch.store');
     Route::resource('documents', DocumentController::class)->except(['show']);
     Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::get('/documents/{document}/file', [DocumentController::class, 'file'])->name('documents.file');

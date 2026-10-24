@@ -6,6 +6,7 @@ import {
     Search,
     SlidersHorizontal,
     Upload,
+    Layers,
     FileText,
     Image,
     File,
@@ -125,6 +126,15 @@ const colorVariants = {
                     <Printer class="w-4 h-4 text-slate-500" />
                     <span>{{ t("Cetak", "Print") }}</span>
                 </button>
+                <Link
+                    v-if="can_create !== false"
+                    :href="route('documents.batch.create')"
+                    class="flex items-center gap-1.5 px-3 py-2 border border-emerald-300 dark:border-emerald-700/60 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 rounded-xl text-xs sm:text-sm font-semibold transition-colors shadow-sm"
+                    :title="t('Unggah banyak berkas sekaligus', 'Upload multiple documents at once')"
+                >
+                    <Layers class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>{{ t("Unggah Masal", "Batch Upload") }}</span>
+                </Link>
                 <Link
                     v-if="can_create !== false"
                     :href="route('documents.create')"
@@ -314,22 +324,32 @@ const colorVariants = {
                     class="h-2 w-full"
                     :class="{
                         'bg-primary-500': doc.is_image,
-                        'bg-rose-500': !doc.is_image,
+                        'bg-rose-500': doc.is_pdf,
+                        'bg-blue-600': doc.is_word,
+                        'bg-amber-500': doc.is_text,
+                        'bg-slate-400': !doc.is_image && !doc.is_pdf && !doc.is_word && !doc.is_text,
                     }"
                 ></div>
                 <div class="p-4">
                     <div class="flex items-start gap-3 mb-3">
                         <div
                             class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                            :class="
-                                doc.is_image
-                                    ? 'bg-primary-100 dark:bg-primary-900/30'
-                                    : 'bg-rose-100 dark:bg-rose-900/30'
-                            "
+                            :class="{
+                                'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400': doc.is_image,
+                                'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400': doc.is_pdf,
+                                'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400': doc.is_word,
+                                'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400': doc.is_text,
+                                'bg-slate-100 dark:bg-slate-700 text-slate-500': !doc.is_image && !doc.is_pdf && !doc.is_word && !doc.is_text,
+                            }"
                         >
                             <Image
                                 v-if="doc.is_image"
-                                class="w-5 h-5 text-primary-600 dark:text-primary-400"
+                                class="w-5 h-5"
+                            />
+                            <span v-else-if="doc.is_word" class="font-bold text-sm">W</span>
+                            <FileText
+                                v-else-if="doc.is_text"
+                                class="w-5 h-5"
                             />
                             <File
                                 v-else
@@ -351,15 +371,24 @@ const colorVariants = {
                         </div>
                     </div>
                     <div class="space-y-2">
-                        <span
-                            :class="[
-                                'inline-block px-2 py-0.5 rounded-md text-xs font-medium',
-                                colorVariants[doc.category?.color] ||
-                                    colorVariants.blue,
-                            ]"
-                        >
-                            {{ doc.category?.name }}
-                        </span>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span
+                                v-if="doc.kode_klasifikasi"
+                                class="inline-block px-1.5 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60"
+                                :title="'Klasifikasi Permendagri: ' + doc.kode_klasifikasi"
+                            >
+                                {{ doc.kode_klasifikasi }}
+                            </span>
+                            <span
+                                :class="[
+                                    'inline-block px-2 py-0.5 rounded-md text-xs font-medium',
+                                    colorVariants[doc.category?.color] ||
+                                        colorVariants.blue,
+                                ]"
+                            >
+                                {{ doc.category?.name }}
+                            </span>
+                        </div>
                         <div
                             class="flex items-center justify-between text-xs text-slate-400"
                         >
