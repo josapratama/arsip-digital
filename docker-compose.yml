@@ -1,0 +1,72 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: development
+        container_name: arsip_digital_app
+        restart: unless-stopped
+        ports:
+            - "80:80"
+            - "443:443"
+            - "443:443/udp"
+        environment:
+            SERVER_NAME: ":80"
+            APP_ENV: local
+            APP_DEBUG: "true"
+            APP_KEY: "base64:oNQGbFlc2Q/rbsaHJ5buNcvKyLqEjQCEnSwWdE1BkPQ="
+            APP_URL: http://localhost
+            DB_CONNECTION: pgsql
+            DB_HOST: postgres
+            DB_PORT: 5432
+            DB_DATABASE: arsip_digital
+            DB_USERNAME: arsip_user
+            DB_PASSWORD: arsip_secret
+            GOOGLE_CLOUD_VISION_API_KEY: "${GOOGLE_CLOUD_VISION_API_KEY:-}"
+            CACHE_STORE: database
+        volumes:
+            # Persistent storage only — no source code mount
+            - app_storage:/app/storage
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - arsip_network
+
+    postgres:
+        image: postgres:16-alpine
+        container_name: arsip_digital_postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: arsip_digital
+            POSTGRES_USER: arsip_user
+            POSTGRES_PASSWORD: arsip_secret
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - "5434:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U arsip_user -d arsip_digital"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - arsip_network
+
+    redis:
+        image: redis:7-alpine
+        container_name: arsip_digital_redis
+        restart: unless-stopped
+        volumes:
+            - redis_data:/data
+        networks:
+            - arsip_network
+
+volumes:
+    postgres_data:
+    redis_data:
+    app_storage:
+
+networks:
+    arsip_network:
+        driver: bridge
