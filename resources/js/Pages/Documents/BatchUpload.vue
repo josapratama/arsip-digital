@@ -252,11 +252,15 @@ async function submitBatch() {
 
     items.value.forEach((item, index) => {
         formData.append(`items[${index}][title]`, item.title.trim());
-        if (item.nomor_surat) {
-            formData.append(`items[${index}][nomor_surat]`, item.nomor_surat.trim());
+        const docNum = (item.document_number || item.nomor_surat || "").trim();
+        if (docNum) {
+            formData.append(`items[${index}][document_number]`, docNum);
+            formData.append(`items[${index}][nomor_surat]`, docNum);
         }
-        if (item.kode_klasifikasi) {
-            formData.append(`items[${index}][kode_klasifikasi]`, item.kode_klasifikasi.trim());
+        const classCode = (item.classification_code || item.kode_klasifikasi || "").trim();
+        if (classCode) {
+            formData.append(`items[${index}][classification_code]`, classCode);
+            formData.append(`items[${index}][kode_klasifikasi]`, classCode);
         }
         formData.append(`items[${index}][category_id]`, item.category_id);
         if (item.subcategory_id) {

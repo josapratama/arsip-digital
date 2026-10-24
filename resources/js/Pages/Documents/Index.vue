@@ -363,21 +363,21 @@ const colorVariants = {
                                 {{ doc.title }}
                             </p>
                             <p
-                                v-if="doc.nomor_surat"
+                                v-if="doc.document_number || doc.nomor_surat"
                                 class="text-xs text-slate-400 mt-0.5 truncate"
                             >
-                                {{ doc.nomor_surat }}
+                                {{ doc.document_number || doc.nomor_surat }}
                             </p>
                         </div>
                     </div>
                     <div class="space-y-2">
                         <div class="flex items-center gap-1.5 flex-wrap">
                             <span
-                                v-if="doc.kode_klasifikasi"
+                                v-if="doc.classification_code || doc.kode_klasifikasi"
                                 class="inline-block px-1.5 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60"
-                                :title="'Klasifikasi Permendagri: ' + doc.kode_klasifikasi"
+                                :title="'Klasifikasi Permendagri: ' + (doc.classification_code || doc.kode_klasifikasi)"
                             >
-                                {{ doc.kode_klasifikasi }}
+                                {{ doc.classification_code || doc.kode_klasifikasi }}
                             </span>
                             <span
                                 :class="[

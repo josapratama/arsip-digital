@@ -76,18 +76,20 @@ export function parseOcrText(text) {
     }
 
     const result = {
+        documentNumber: '',
         nomorSurat: '',
         tanggal: '',
         judul: '',
     };
 
-    // ── Detect Nomor Surat ───────────────────────────────────────────────────
+    // ── Detect Nomor Surat / Document Number ──────────────────────────────────
     for (const pattern of NOMOR_SURAT_PATTERNS) {
         const match = text.match(pattern);
         if (match) {
             const rawVal = match[1] || match[0];
             const cleaned = cleanNomorSurat(rawVal);
             if (cleaned.length >= 3) {
+                result.documentNumber = cleaned;
                 result.nomorSurat = cleaned;
                 break;
             }

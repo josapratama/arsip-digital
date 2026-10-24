@@ -373,7 +373,7 @@ const showLogoutModal = ref(false);
                         <p
                             class="text-xs text-slate-500 dark:text-slate-400 truncate"
                         >
-                            {{ user?.jabatan }}
+                            {{ user?.position || user?.jabatan }}
                         </p>
                     </div>
                     <ChevronRight class="w-4 h-4 text-slate-400 shrink-0" />

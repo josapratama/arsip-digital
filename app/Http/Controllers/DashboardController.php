@@ -30,7 +30,8 @@ class DashboardController extends Controller
             ->map(fn($doc) => [
                 'id' => $doc->id,
                 'title' => $doc->title,
-                'nomor_surat' => $doc->nomor_surat,
+                'document_number' => $doc->document_number,
+                'nomor_surat' => $doc->document_number,
                 'category' => $doc->category?->name,
                 'subcategory' => $doc->subcategory?->name,
                 'uploader' => $doc->uploader?->name,
@@ -41,7 +42,7 @@ class DashboardController extends Controller
 
         $categoryStats = Category::root()
             ->active()
-            ->withCount(['documents' => fn($q) => $q->where('status', 'aktif')])
+            ->withCount(['documents' => fn($q) => $q->whereIn('status', ['active', 'aktif'])])
             ->get()
             ->map(fn($cat) => [
                 'id' => $cat->id,

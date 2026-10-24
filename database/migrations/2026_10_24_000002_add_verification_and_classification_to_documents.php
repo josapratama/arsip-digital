@@ -10,8 +10,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('documents', function (Blueprint $table) {
-            $table->string('verification_code', 64)->nullable()->unique()->after('nomor_surat');
-            $table->string('kode_klasifikasi', 30)->nullable()->after('verification_code');
+            $prevCol = Schema::hasColumn('documents', 'document_number') ? 'document_number' : (Schema::hasColumn('documents', 'nomor_surat') ? 'nomor_surat' : null);
+            if (!Schema::hasColumn('documents', 'verification_code')) {
+                $col = $table->string('verification_code', 64)->nullable()->unique();
+                if ($prevCol) {
+                    $col->after($prevCol);
+                }
+            }
+            if (!Schema::hasColumn('documents', 'classification_code') && !Schema::hasColumn('documents', 'kode_klasifikasi')) {
+                $table->string('classification_code', 30)->nullable()->after('verification_code');
+            }
         });
 
         SiteSetting::firstOrCreate(
@@ -29,7 +37,13 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('documents', function (Blueprint $table) {
-            $table->dropColumn(['verification_code', 'kode_klasifikasi']);
+            $cols = [];
+            if (Schema::hasColumn('documents', 'verification_code')) $cols[] = 'verification_code';
+            if (Schema::hasColumn('documents', 'classification_code')) $cols[] = 'classification_code';
+            if (Schema::hasColumn('documents', 'kode_klasifikasi')) $cols[] = 'kode_klasifikasi';
+            if (!empty($cols)) {
+                $table->dropColumn($cols);
+            }
         });
 
         SiteSetting::where('key', 'enable_document_qr')->delete();

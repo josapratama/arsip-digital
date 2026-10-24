@@ -115,6 +115,7 @@ class UserSeeder extends Seeder
             ['email' => $email],
             [
                 'name'              => $name,
+                'position'          => $jabatan,
                 'jabatan'           => $jabatan,
                 'password'          => bcrypt('password'),
                 'locale'            => 'id',

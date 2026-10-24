@@ -15,12 +15,38 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'position',
         'jabatan',
         'avatar',
         'locale',
         'theme',
         'is_active',
     ];
+
+    protected $appends = [
+        'jabatan',
+        'position',
+    ];
+
+    public function getPositionAttribute(): ?string
+    {
+        return $this->attributes['position'] ?? $this->attributes['jabatan'] ?? null;
+    }
+
+    public function setPositionAttribute($value): void
+    {
+        $this->attributes['position'] = $value;
+    }
+
+    public function getJabatanAttribute(): ?string
+    {
+        return $this->attributes['position'] ?? $this->attributes['jabatan'] ?? null;
+    }
+
+    public function setJabatanAttribute($value): void
+    {
+        $this->attributes['position'] = $value;
+    }
 
     protected $hidden = [
         'password',

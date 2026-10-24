@@ -129,7 +129,7 @@ function toggleLocale() {
                             <div>
                                 <span class="text-[11px] text-slate-400 block">{{ t("Nomor Surat", "Letter Number") }}</span>
                                 <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono">
-                                    {{ document.nomor_surat || "-" }}
+                                    {{ document.document_number || document.nomor_surat || "-" }}
                                 </span>
                             </div>
                         </div>
@@ -160,12 +160,12 @@ function toggleLocale() {
                         </div>
 
                         <!-- Kode Klasifikasi Kemendagri -->
-                        <div v-if="document.kode_klasifikasi" class="flex items-start gap-2.5">
+                        <div v-if="document.classification_code || document.kode_klasifikasi" class="flex items-start gap-2.5">
                             <Building2 class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                             <div>
                                 <span class="text-[11px] text-slate-400 block">{{ t("Kode Klasifikasi Kemendagri", "Kemendagri Code") }}</span>
                                 <span class="inline-block px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 font-mono font-bold text-xs">
-                                    {{ document.kode_klasifikasi }}
+                                    {{ document.classification_code || document.kode_klasifikasi }}
                                 </span>
                             </div>
                         </div>

@@ -23,12 +23,15 @@ function toggleLocale() {
 const form = useForm({
     name: '',
     email: '',
+    position: '',
     jabatan: '',
     password: '',
     password_confirmation: '',
 });
 
 function submit() {
+    form.position = form.position || form.jabatan;
+    form.jabatan = form.position;
     form.post(route('register'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
     });
@@ -157,7 +160,8 @@ function submit() {
                                 {{ t("Jabatan / Peran Petugas", "Role / Position") }} <span class="text-red-500">*</span>
                             </label>
                             <input
-                                v-model="form.jabatan"
+                                v-model="form.position"
+                                @input="form.jabatan = form.position"
                                 type="text"
                                 required
                                 :placeholder="t('Contoh: Staf TU / Operator Arsip / Kasi Pelayanan', 'Example: Archive Operator')"
@@ -167,10 +171,10 @@ function submit() {
                                     text-slate-900 dark:text-white
                                     placeholder:text-slate-400
                                     focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                :class="{ 'border-red-500 focus:ring-red-500': form.errors.jabatan }"
+                                :class="{ 'border-red-500 focus:ring-red-500': form.errors.position || form.errors.jabatan }"
                             />
-                            <p v-if="form.errors.jabatan" class="mt-1 text-xs text-red-500 font-medium">
-                                {{ form.errors.jabatan }}
+                            <p v-if="form.errors.position || form.errors.jabatan" class="mt-1 text-xs text-red-500 font-medium">
+                                {{ form.errors.position || form.errors.jabatan }}
                             </p>
                         </div>
 

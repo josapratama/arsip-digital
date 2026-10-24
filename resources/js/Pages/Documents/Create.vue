@@ -25,7 +25,9 @@ const { t } = useI18n();
 
 const form = useForm({
     title: "",
+    document_number: "",
     nomor_surat: "",
+    classification_code: "",
     kode_klasifikasi: "",
     category_id: "",
     subcategory_id: "",
@@ -82,7 +84,9 @@ function handleFile(file) {
 
     // Reset previous document values so stale data doesn't persist
     form.title = "";
+    form.document_number = "";
     form.nomor_surat = "";
+    form.classification_code = "";
     form.kode_klasifikasi = "";
     form.document_date = "";
     form.description = "";
@@ -178,8 +182,10 @@ async function processOcr() {
                     form.title = res.data.metadata.title;
                     autoFilled.value.title = true;
                 }
-                if (res.data.metadata.nomor_surat && !form.nomor_surat) {
-                    form.nomor_surat = res.data.metadata.nomor_surat;
+                const docNum = res.data.metadata.document_number || res.data.metadata.nomor_surat;
+                if (docNum && !form.document_number && !form.nomor_surat) {
+                    form.document_number = docNum;
+                    form.nomor_surat = docNum;
                     autoFilled.value.nomor_surat = true;
                 }
                 if (res.data.metadata.document_date && !form.document_date) {
@@ -191,7 +197,8 @@ async function processOcr() {
             // Kemendagri auto-suggestion
             if (res.data.kemendagri) {
                 kemendagriDetected.value = res.data.kemendagri;
-                if (!form.kode_klasifikasi && res.data.kemendagri.kode) {
+                if (!form.classification_code && !form.kode_klasifikasi && res.data.kemendagri.kode) {
+                    form.classification_code = res.data.kemendagri.kode;
                     form.kode_klasifikasi = res.data.kemendagri.kode;
                     autoFilled.value.kode_klasifikasi = true;
                 }
@@ -234,8 +241,10 @@ function autoFillFromOcr(text, overwrite = true) {
         form.title = detected.judul;
         autoFilled.value.title = true;
     }
-    if (detected.nomorSurat && (overwrite || !form.nomor_surat)) {
-        form.nomor_surat = detected.nomorSurat;
+    const detectedDocNum = detected.documentNumber || detected.nomorSurat;
+    if (detectedDocNum && (overwrite || (!form.document_number && !form.nomor_surat))) {
+        form.document_number = detectedDocNum;
+        form.nomor_surat = detectedDocNum;
         autoFilled.value.nomor_surat = true;
     }
     if (detected.tanggal && (overwrite || !form.document_date)) {
@@ -245,6 +254,10 @@ function autoFillFromOcr(text, overwrite = true) {
 }
 
 function submit() {
+    form.document_number = form.document_number || form.nomor_surat;
+    form.nomor_surat = form.document_number;
+    form.classification_code = form.classification_code || form.kode_klasifikasi;
+    form.kode_klasifikasi = form.classification_code;
     form.post(route("documents.store"), { forceFormData: true });
 }
 </script>

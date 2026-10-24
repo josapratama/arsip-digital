@@ -26,9 +26,9 @@ class OcrPreviewController extends Controller
         $result = $this->ocrService->extractText($tempPath, $originalName);
 
         if (!empty($result['success']) && !empty($result['text'])) {
-            $nomorSurat = $result['metadata']['nomor_surat'] ?? null;
+            $documentNumber = $result['metadata']['document_number'] ?? $result['metadata']['nomor_surat'] ?? null;
             $title = $result['metadata']['title'] ?? null;
-            $result['kemendagri'] = $this->kemendagriService->suggest($result['text'], $title, $nomorSurat);
+            $result['kemendagri'] = $this->kemendagriService->suggest($result['text'], $title, $documentNumber);
         }
 
         return response()->json($result);

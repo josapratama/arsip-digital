@@ -39,14 +39,18 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'jabatan' => 'required|string|max:255',
+            'position' => 'nullable|string|max:255',
+            'jabatan' => 'nullable|string|max:255',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        $position = $request->position ?? $request->jabatan ?? '-';
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'jabatan' => $request->jabatan,
+            'position' => $position,
+            'jabatan' => $position,
             'password' => Hash::make($request->password),
             'locale' => 'id',
             'theme' => 'light',
@@ -58,7 +62,7 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        ActivityLog::record('register', "Pengguna baru mendaftar: {$user->name} ({$user->jabatan})");
+        ActivityLog::record('register', "Pengguna baru mendaftar: {$user->name} ({$user->position})");
 
         return redirect(route('dashboard'))->with('success', 'Akun berhasil didaftarkan dan Anda telah masuk ke sistem.');
     }

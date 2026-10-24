@@ -13,10 +13,15 @@ const props = defineProps({
 
 const { t } = useI18n();
 
+const docNumber = props.document.document_number ?? props.document.nomor_surat ?? "";
+const classCode = props.document.classification_code ?? props.document.kode_klasifikasi ?? "";
+
 const form = useForm({
     title: props.document.title ?? "",
-    nomor_surat: props.document.nomor_surat ?? "",
-    kode_klasifikasi: props.document.kode_klasifikasi ?? "",
+    document_number: docNumber,
+    nomor_surat: docNumber,
+    classification_code: classCode,
+    kode_klasifikasi: classCode,
     category_id: props.document.category_id ?? "",
     subcategory_id: props.document.subcategory_id ?? "",
     document_date: props.document.document_date
@@ -38,6 +43,8 @@ watch(
 );
 
 function submit() {
+    form.nomor_surat = form.document_number;
+    form.kode_klasifikasi = form.classification_code;
     form.patch(route("documents.update", props.document.id));
 }
 </script>

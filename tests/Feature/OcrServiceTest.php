@@ -66,6 +66,7 @@ class OcrServiceTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertEquals('docx_native', $result['driver']);
         $this->assertStringContainsString('SURAT UNDANGAN', strtoupper($result['text']));
+        $this->assertEquals('005/12/SKR/2026', $result['metadata']['document_number']);
         $this->assertEquals('005/12/SKR/2026', $result['metadata']['nomor_surat']);
         $this->assertEquals('2026-10-20', $result['metadata']['document_date']);
     }
@@ -83,6 +84,7 @@ class OcrServiceTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertEquals('text_native', $result['driver']);
         $this->assertStringContainsString('SUKARAMI', $result['text']);
+        $this->assertEquals('140/01/SKR/2026', $result['metadata']['document_number']);
         $this->assertEquals('140/01/SKR/2026', $result['metadata']['nomor_surat']);
     }
 
@@ -92,6 +94,7 @@ class OcrServiceTest extends TestCase
         $text = "PEMERINTAH KABUPATEN MUARA ENIM\nNomor: 400.1.2.2/ 326 /SKR-RB / 2026\nPerihal: Undangan Rapat Musyawarah Desa Tahun 2026\n\nSukarami, 14 Oktober 2026";
         $meta = $ocrService->parseMetadata($text);
 
+        $this->assertEquals('400.1.2.2/326/SKR-RB/2026', $meta['document_number']);
         $this->assertEquals('400.1.2.2/326/SKR-RB/2026', $meta['nomor_surat']);
         $this->assertEquals('2026-10-14', $meta['document_date']);
         $this->assertStringContainsString('Undangan Rapat Musyawarah', $meta['title']);

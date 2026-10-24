@@ -21,10 +21,11 @@ class UserController extends Controller
 
         if ($request->filled('q')) {
             $search = $request->q;
-            $query->where(function ($q) use ($search) {
+            $posCol = \Illuminate\Support\Facades\Schema::hasColumn('users', 'position') ? 'position' : 'jabatan';
+            $query->where(function ($q) use ($search, $posCol) {
                 $q->where('name', 'ilike', "%{$search}%")
                   ->orWhere('email', 'ilike', "%{$search}%")
-                  ->orWhere('jabatan', 'ilike', "%{$search}%");
+                  ->orWhere($posCol, 'ilike', "%{$search}%");
             });
         }
 
@@ -40,7 +41,8 @@ class UserController extends Controller
             'id' => $u->id,
             'name' => $u->name,
             'email' => $u->email,
-            'jabatan' => $u->jabatan,
+            'position' => $u->position,
+            'jabatan' => $u->position,
             'role' => $u->roles->first()?->name ?? 'sekdes-operator',
             'role_label' => match($u->roles->first()?->name) {
                 'admin' => 'Administrator',
@@ -75,15 +77,19 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:users,email',
-            'jabatan' => 'required|string|max:255',
+            'position' => 'nullable|string|max:255',
+            'jabatan' => 'nullable|string|max:255',
             'role' => 'required|string|exists:roles,name',
             'password' => 'required|string|min:8',
         ]);
 
+        $position = $request->position ?? $request->jabatan ?? '-';
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'jabatan' => $request->jabatan,
+            'position' => $position,
+            'jabatan' => $position,
             'password' => Hash::make($request->password),
             'locale' => 'id',
             'theme' => 'light',
@@ -93,7 +99,7 @@ class UserController extends Controller
 
         $user->assignRole($request->role);
 
-        ActivityLog::record('settings', "Menambahkan staf baru: {$user->name} ({$user->jabatan})");
+        ActivityLog::record('settings', "Menambahkan staf baru: {$user->name} ({$user->position})");
 
         return back()->with('success', "Akun staf {$user->name} berhasil ditambahkan.");
     }
@@ -105,16 +111,20 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')->ignore($user->id)],
-            'jabatan' => 'required|string|max:255',
+            'position' => 'nullable|string|max:255',
+            'jabatan' => 'nullable|string|max:255',
             'role' => 'required|string|exists:roles,name',
             'password' => 'nullable|string|min:8',
             'is_active' => 'required|boolean',
         ]);
 
+        $position = $request->has('position') ? $request->position : ($request->has('jabatan') ? $request->jabatan : $user->position);
+
         $data = [
             'name' => $request->name,
             'email' => $request->email,
-            'jabatan' => $request->jabatan,
+            'position' => $position,
+            'jabatan' => $position,
             'is_active' => $request->boolean('is_active'),
         ];
 

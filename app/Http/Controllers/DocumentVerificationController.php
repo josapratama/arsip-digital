@@ -18,7 +18,7 @@ class DocumentVerificationController extends Controller
     {
         $document = Document::with(['category', 'subcategory', 'uploader'])
             ->where('verification_code', $code)
-            ->where('status', 'aktif')
+            ->whereIn('status', ['active', 'aktif'])
             ->first();
 
         $enableQr = (bool) SiteSetting::get('enable_document_qr', true);
@@ -46,8 +46,10 @@ class DocumentVerificationController extends Controller
             'document' => [
                 'id' => $document->id,
                 'title' => $document->title,
-                'nomor_surat' => $document->nomor_surat,
-                'kode_klasifikasi' => $document->kode_klasifikasi,
+                'document_number' => $document->document_number,
+                'nomor_surat' => $document->document_number,
+                'classification_code' => $document->classification_code,
+                'kode_klasifikasi' => $document->classification_code,
                 'category_name' => $document->category?->name,
                 'subcategory_name' => $document->subcategory?->name,
                 'document_date' => $document->document_date?->format('d M Y'),

@@ -58,6 +58,7 @@ const editingUserId = ref(null);
 const form = useForm({
     name: "",
     email: "",
+    position: "",
     jabatan: "",
     role: "sekdes-operator",
     password: "",
@@ -80,7 +81,8 @@ function openEditModal(user) {
     form.clearErrors();
     form.name = user.name;
     form.email = user.email;
-    form.jabatan = user.jabatan;
+    form.position = user.position || user.jabatan || "";
+    form.jabatan = user.position || user.jabatan || "";
     form.role = user.role;
     form.password = "";
     form.is_active = user.is_active;
@@ -88,6 +90,8 @@ function openEditModal(user) {
 }
 
 function submitForm() {
+    form.position = form.position || form.jabatan;
+    form.jabatan = form.position;
     if (isEditing.value) {
         form.put(route("admin.users.update", editingUserId.value), {
             onSuccess: () => {
@@ -245,7 +249,7 @@ const roleBadgeColor = {
                                     </div>
                                 </td>
                                 <td class="px-5 py-4 text-slate-600 dark:text-slate-300">
-                                    {{ user.jabatan }}
+                                    {{ user.position || user.jabatan }}
                                 </td>
                                 <td class="px-5 py-4">
                                     <span
@@ -380,13 +384,14 @@ const roleBadgeColor = {
                                     {{ t("Jabatan", "Job Title / Position") }} <span class="text-red-500">*</span>
                                 </label>
                                 <input
-                                    v-model="form.jabatan"
+                                    v-model="form.position"
+                                    @input="form.jabatan = form.position"
                                     type="text"
                                     required
                                     placeholder="Contoh: Kasi Pemerintahan"
                                     class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
                                 />
-                                <p v-if="form.errors.jabatan" class="text-xs text-red-500 mt-1">{{ form.errors.jabatan }}</p>
+                                <p v-if="form.errors.position || form.errors.jabatan" class="text-xs text-red-500 mt-1">{{ form.errors.position || form.errors.jabatan }}</p>
                             </div>
                         </div>
 

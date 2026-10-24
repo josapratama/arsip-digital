@@ -57,7 +57,8 @@ class DocumentController extends Controller
             'documents' => $documents->through(fn($doc) => [
                 'id' => $doc->id,
                 'title' => $doc->title,
-                'nomor_surat' => $doc->nomor_surat,
+                'document_number' => $doc->document_number,
+                'nomor_surat' => $doc->document_number,
                 'category' => ['id' => $doc->category_id, 'name' => $doc->category?->name, 'color' => $doc->category?->color],
                 'subcategory' => $doc->subcategory ? ['id' => $doc->subcategory_id, 'name' => $doc->subcategory?->name] : null,
                 'file_type' => $doc->file_type,
@@ -67,7 +68,8 @@ class DocumentController extends Controller
                 'is_word' => $doc->is_word,
                 'is_text' => $doc->is_text,
                 'file_extension' => $doc->file_extension,
-                'kode_klasifikasi' => $doc->kode_klasifikasi,
+                'classification_code' => $doc->classification_code,
+                'kode_klasifikasi' => $doc->classification_code,
                 'verification_code' => $doc->verification_code,
                 'document_date' => $doc->document_date?->format('d M Y'),
                 'uploader' => $doc->uploader?->name,
@@ -96,7 +98,9 @@ class DocumentController extends Controller
 
         $request->validate([
             'title' => 'required|string|max:255',
+            'document_number' => 'nullable|string|max:100',
             'nomor_surat' => 'nullable|string|max:100',
+            'classification_code' => 'nullable|string|max:30',
             'kode_klasifikasi' => 'nullable|string|max:30',
             'category_id' => 'required|exists:categories,id',
             'subcategory_id' => 'nullable|exists:categories,id',
@@ -120,10 +124,15 @@ class DocumentController extends Controller
             }
         }
 
+        $docNumber = $request->document_number ?? $request->nomor_surat;
+        $classCode = $request->classification_code ?? $request->kode_klasifikasi;
+
         $document = Document::create([
             'title' => $request->title,
-            'nomor_surat' => $request->nomor_surat,
-            'kode_klasifikasi' => $request->kode_klasifikasi,
+            'document_number' => $docNumber,
+            'nomor_surat' => $docNumber,
+            'classification_code' => $classCode,
+            'kode_klasifikasi' => $classCode,
             'category_id' => $request->category_id,
             'subcategory_id' => $request->subcategory_id,
             'document_date' => $request->document_date,
@@ -136,7 +145,7 @@ class DocumentController extends Controller
             'ocr_processed' => !empty($ocrText),
             'ocr_processed_at' => !empty($ocrText) ? now() : null,
             'uploaded_by' => auth()->id(),
-            'status' => 'aktif',
+            'status' => 'active',
         ]);
 
         ActivityLog::record('upload', "Mengunggah dokumen: {$document->title}", $document);
@@ -154,8 +163,10 @@ class DocumentController extends Controller
             'document' => [
                 'id' => $document->id,
                 'title' => $document->title,
-                'nomor_surat' => $document->nomor_surat,
-                'kode_klasifikasi' => $document->kode_klasifikasi,
+                'document_number' => $document->document_number,
+                'nomor_surat' => $document->document_number,
+                'classification_code' => $document->classification_code,
+                'kode_klasifikasi' => $document->classification_code,
                 'verification_code' => $document->verification_code,
                 'verification_url' => route('documents.verify', $document->verification_code ?? 'none'),
                 'category' => $document->category,
@@ -212,7 +223,9 @@ class DocumentController extends Controller
 
         $request->validate([
             'title' => 'required|string|max:255',
+            'document_number' => 'nullable|string|max:100',
             'nomor_surat' => 'nullable|string|max:100',
+            'classification_code' => 'nullable|string|max:30',
             'kode_klasifikasi' => 'nullable|string|max:30',
             'category_id' => 'required|exists:categories,id',
             'subcategory_id' => 'nullable|exists:categories,id',
@@ -221,10 +234,15 @@ class DocumentController extends Controller
             'ocr_text' => 'nullable|string',
         ]);
 
+        $docNumber = $request->has('document_number') ? $request->document_number : ($request->has('nomor_surat') ? $request->nomor_surat : $document->document_number);
+        $classCode = $request->has('classification_code') ? $request->classification_code : ($request->has('kode_klasifikasi') ? $request->kode_klasifikasi : $document->classification_code);
+
         $document->update([
             'title' => $request->title,
-            'nomor_surat' => $request->nomor_surat,
-            'kode_klasifikasi' => $request->kode_klasifikasi,
+            'document_number' => $docNumber,
+            'nomor_surat' => $docNumber,
+            'classification_code' => $classCode,
+            'kode_klasifikasi' => $classCode,
             'category_id' => $request->category_id,
             'subcategory_id' => $request->subcategory_id,
             'document_date' => $request->document_date,
@@ -361,7 +379,7 @@ class DocumentController extends Controller
             foreach ($documents as $doc) {
                 fputcsv($handle, [
                     $no++,
-                    $doc->nomor_surat ?? '-',
+                    $doc->document_number ?? $doc->nomor_surat ?? '-',
                     $doc->title,
                     $doc->category?->name ?? '-',
                     $doc->subcategory?->name ?? '-',

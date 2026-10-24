@@ -68,16 +68,16 @@ class KlasifikasiKemendagriService
     /**
      * Analisis teks dan nomor surat untuk merekomendasikan Kode Kemendagri & Kategori Desa
      */
-    public function suggest(string $text, ?string $title = null, ?string $nomorSurat = null): ?array
+    public function suggest(string $text, ?string $title = null, ?string $documentNumber = null): ?array
     {
-        $haystack = strtolower(($nomorSurat ?? '') . ' ' . ($title ?? '') . ' ' . $text);
+        $haystack = strtolower(($documentNumber ?? '') . ' ' . ($title ?? '') . ' ' . $text);
         if (strlen(trim($haystack)) < 3) {
             return null;
         }
 
         // 1. Ekstraksi langsung dari pola nomor surat resmi Kemendagri (contoh: 400.1.2.2/... atau 140/01/...)
-        if (!empty($nomorSurat)) {
-            if (preg_match('/^\s*(400(?:\.1)?|005|010|020|140|141|142|143|146|180|270|330|332|440|450|470|510|520|580|600|700|800|900|910|950)\b/i', $nomorSurat, $m)) {
+        if (!empty($documentNumber)) {
+            if (preg_match('/^\s*(400(?:\.1)?|005|010|020|140|141|142|143|146|180|270|330|332|440|450|470|510|520|580|600|700|800|900|910|950)\b/i', $documentNumber, $m)) {
                 return $this->buildRecommendation($m[1], 'Nomor Surat Kedinasan');
             }
         }

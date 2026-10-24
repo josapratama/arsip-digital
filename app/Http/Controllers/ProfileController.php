@@ -17,14 +17,21 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'name'    => 'required|string|max:255',
-            'jabatan' => 'nullable|string|max:100',
-            'locale'  => 'required|in:id,en',
-            'theme'   => 'required|in:light,dark',
+            'name'     => 'required|string|max:255',
+            'position' => 'nullable|string|max:100',
+            'jabatan'  => 'nullable|string|max:100',
+            'locale'   => 'required|in:id,en',
+            'theme'    => 'required|in:light,dark',
         ]);
 
         $user = auth()->user();
-        $user->update($request->only(['name', 'jabatan', 'locale', 'theme']));
+        $position = $request->has('position') ? $request->position : $request->jabatan;
+        $user->update([
+            'name' => $request->name,
+            'position' => $position,
+            'locale' => $request->locale,
+            'theme' => $request->theme,
+        ]);
 
         app()->setLocale($request->locale);
         session(['locale' => $request->locale]);

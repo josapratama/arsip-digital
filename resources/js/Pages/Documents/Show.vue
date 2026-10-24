@@ -141,10 +141,10 @@ const colorBadge = {
                         {{ document.title }}
                     </h1>
                     <p
-                        v-if="document.nomor_surat"
+                        v-if="document.document_number || document.nomor_surat"
                         class="text-sm text-slate-500 dark:text-slate-400"
                     >
-                        {{ document.nomor_surat }}
+                        {{ document.document_number || document.nomor_surat }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
@@ -429,7 +429,7 @@ const colorBadge = {
                             </div>
 
                             <!-- Kode Klasifikasi Kemendagri -->
-                            <div v-if="document.kode_klasifikasi">
+                            <div v-if="document.classification_code || document.kode_klasifikasi">
                                 <p
                                     class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5"
                                 >
@@ -439,7 +439,7 @@ const colorBadge = {
                                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300"
                                 >
                                     <Building2 class="w-3.5 h-3.5" />
-                                    {{ document.kode_klasifikasi }}
+                                    {{ document.classification_code || document.kode_klasifikasi }}
                                 </span>
                             </div>
 
@@ -616,11 +616,11 @@ const colorBadge = {
             <div class="mb-6 flex justify-between items-start gap-6">
                 <div class="space-y-1.5 flex-1">
                     <h1 class="text-lg font-bold">{{ document.title }}</h1>
-                    <p v-if="document.nomor_surat" class="text-sm font-semibold text-slate-700">
-                        Nomor Surat: {{ document.nomor_surat }}
+                    <p v-if="document.document_number || document.nomor_surat" class="text-sm font-semibold text-slate-700">
+                        Nomor Surat: {{ document.document_number || document.nomor_surat }}
                     </p>
-                    <p v-if="document.kode_klasifikasi" class="text-xs font-mono font-bold text-slate-700">
-                        Kode Klasifikasi Kemendagri: {{ document.kode_klasifikasi }}
+                    <p v-if="document.classification_code || document.kode_klasifikasi" class="text-xs font-mono font-bold text-slate-700">
+                        Kode Klasifikasi Kemendagri: {{ document.classification_code || document.kode_klasifikasi }}
                     </p>
                     <p class="text-xs text-slate-600">
                         Kategori: {{ document.category?.name }} <span v-if="document.subcategory">/ {{ document.subcategory?.name }}</span>

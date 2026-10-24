@@ -22,7 +22,8 @@ const { t } = useI18n();
 // Initialize from localStorage (source of truth) — fallback to DB value
 const profileForm = useForm({
     name: props.user.name ?? "",
-    jabatan: props.user.jabatan ?? "",
+    position: props.user.position ?? props.user.jabatan ?? "",
+    jabatan: props.user.position ?? props.user.jabatan ?? "",
     locale: localStorage.getItem("locale") || props.user.locale || "id",
     theme: localStorage.getItem("theme") || props.user.theme || "light",
 });
@@ -57,6 +58,8 @@ const showNewPw = ref(false);
 const tab = ref("profile");
 
 function saveProfile() {
+    profileForm.position = profileForm.position || profileForm.jabatan;
+    profileForm.jabatan = profileForm.position;
     profileForm.patch(route("profile.update"), {
         preserveScroll: true,
         onSuccess: () => {
@@ -117,7 +120,7 @@ function savePassword() {
                         {{ user.name }}
                     </p>
                     <p class="text-sm text-slate-500 dark:text-slate-400">
-                        {{ user.jabatan || "—" }}
+                        {{ user.position || user.jabatan || "—" }}
                     </p>
                     <p class="text-xs text-slate-400 mt-0.5">
                         {{ user.email }}
@@ -191,7 +194,8 @@ function savePassword() {
                                     {{ t("Jabatan", "Position") }}
                                 </label>
                                 <input
-                                    v-model="profileForm.jabatan"
+                                    v-model="profileForm.position"
+                                    @input="profileForm.jabatan = profileForm.position"
                                     type="text"
                                     :placeholder="
                                         t('Contoh: Kaur TU', 'E.g.: TU Staff')

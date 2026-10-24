@@ -43,7 +43,9 @@ class DocumentBatchController extends Controller
         $request->validate([
             'items' => 'required|array|min:1|max:50',
             'items.*.title' => 'required|string|max:255',
+            'items.*.document_number' => 'nullable|string|max:100',
             'items.*.nomor_surat' => 'nullable|string|max:100',
+            'items.*.classification_code' => 'nullable|string|max:30',
             'items.*.kode_klasifikasi' => 'nullable|string|max:30',
             'items.*.category_id' => 'required|exists:categories,id',
             'items.*.subcategory_id' => 'nullable|exists:categories,id',
@@ -81,10 +83,15 @@ class DocumentBatchController extends Controller
                     }
                 }
 
+                $docNumber = $item['document_number'] ?? $item['nomor_surat'] ?? null;
+                $classCode = $item['classification_code'] ?? $item['kode_klasifikasi'] ?? null;
+
                 $document = Document::create([
                     'title' => $item['title'],
-                    'nomor_surat' => $item['nomor_surat'] ?? null,
-                    'kode_klasifikasi' => $item['kode_klasifikasi'] ?? null,
+                    'document_number' => $docNumber,
+                    'nomor_surat' => $docNumber,
+                    'classification_code' => $classCode,
+                    'kode_klasifikasi' => $classCode,
                     'category_id' => $item['category_id'],
                     'subcategory_id' => !empty($item['subcategory_id']) ? $item['subcategory_id'] : null,
                     'document_date' => !empty($item['document_date']) ? $item['document_date'] : null,
@@ -97,7 +104,7 @@ class DocumentBatchController extends Controller
                     'ocr_processed' => !empty($ocrText),
                     'ocr_processed_at' => !empty($ocrText) ? now() : null,
                     'uploaded_by' => auth()->id(),
-                    'status' => 'aktif',
+                    'status' => 'active',
                 ]);
 
                 ActivityLog::record('upload', "Unggah masal dokumen: {$document->title}", $document);

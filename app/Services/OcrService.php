@@ -657,6 +657,7 @@ class OcrService
     public function parseMetadata(string $text): array
     {
         $res = [
+            'document_number' => '',
             'nomor_surat' => '',
             'document_date' => '',
             'title' => '',
@@ -666,7 +667,7 @@ class OcrService
             return $res;
         }
 
-        // 1. Detect Nomor Surat
+        // 1. Detect Nomor Surat / Document Number
         $patterns = [
             '/(?:nomor|no\.?|nomer)\s*[:\s«_=-]\s*([A-Za-z0-9][A-Za-z0-9.\/\-_ ()]{3,60}\d{4})/i',
             '/(?:nomor|no\.?|nomer)\s*[:\s«_=-]\s*([^\n\r]{3,70})/i',
@@ -678,6 +679,7 @@ class OcrService
                 $raw = $matches[1] ?? $matches[0];
                 $cleaned = $this->cleanNomorSurat($raw);
                 if (strlen($cleaned) >= 3) {
+                    $res['document_number'] = $cleaned;
                     $res['nomor_surat'] = $cleaned;
                     break;
                 }

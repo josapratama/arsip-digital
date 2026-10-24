@@ -78,6 +78,7 @@ class UserManagementTest extends TestCase
 
         $response->assertRedirect();
         $user->refresh();
+        $this->assertEquals('Kasi Pemerintahan Baru', $user->position);
         $this->assertEquals('Kasi Pemerintahan Baru', $user->jabatan);
         $this->assertFalse((bool) $user->is_active);
         $this->assertTrue($user->hasRole('petugas-pemerintahan'));

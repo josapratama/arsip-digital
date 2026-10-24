@@ -37,7 +37,7 @@ class RecycleBinController extends Controller
             abort(403, 'Anda tidak memiliki hak untuk memulihkan dokumen ini.');
         }
 
-        $document->update(['status' => 'aktif']);
+        $document->update(['status' => 'active']);
         ActivityLog::record('restore', "Memulihkan dokumen: {$document->title}", $document);
 
         return back()->with('success', __('messages.document_restored'));

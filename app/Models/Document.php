@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class Document extends Model
 {
@@ -14,8 +15,10 @@ class Document extends Model
 
     protected $fillable = [
         'title',
+        'document_number',
         'nomor_surat',
         'verification_code',
+        'classification_code',
         'kode_klasifikasi',
         'category_id',
         'subcategory_id',
@@ -32,6 +35,60 @@ class Document extends Model
         'uploaded_by',
         'updated_by',
     ];
+
+    protected $appends = [
+        'file_size_formatted',
+        'is_image',
+        'is_pdf',
+        'is_word',
+        'is_text',
+        'file_extension',
+        'can_extract_text',
+        'document_number',
+        'nomor_surat',
+        'classification_code',
+        'kode_klasifikasi',
+    ];
+
+    public function getDocumentNumberAttribute(): ?string
+    {
+        return $this->attributes['document_number'] ?? $this->attributes['nomor_surat'] ?? null;
+    }
+
+    public function setDocumentNumberAttribute($value): void
+    {
+        $this->attributes['document_number'] = $value;
+    }
+
+    public function getNomorSuratAttribute(): ?string
+    {
+        return $this->attributes['document_number'] ?? $this->attributes['nomor_surat'] ?? null;
+    }
+
+    public function setNomorSuratAttribute($value): void
+    {
+        $this->attributes['document_number'] = $value;
+    }
+
+    public function getClassificationCodeAttribute(): ?string
+    {
+        return $this->attributes['classification_code'] ?? $this->attributes['kode_klasifikasi'] ?? null;
+    }
+
+    public function setClassificationCodeAttribute($value): void
+    {
+        $this->attributes['classification_code'] = $value;
+    }
+
+    public function getKodeKlasifikasiAttribute(): ?string
+    {
+        return $this->attributes['classification_code'] ?? $this->attributes['kode_klasifikasi'] ?? null;
+    }
+
+    public function setKodeKlasifikasiAttribute($value): void
+    {
+        $this->attributes['classification_code'] = $value;
+    }
 
     protected static function booted(): void
     {
@@ -85,10 +142,12 @@ class Document extends Model
             return $query;
         }
 
-        return $query->where(function (Builder $sub) use ($clean) {
+        $numCol = Schema::hasColumn('documents', 'document_number') ? 'document_number' : 'nomor_surat';
+
+        return $query->where(function (Builder $sub) use ($clean, $numCol) {
             $sub->whereRaw("ocr_text_tsv @@ websearch_to_tsquery('indonesian', ?)", [$clean])
                 ->orWhere('title', 'ilike', "%{$clean}%")
-                ->orWhere('nomor_surat', 'ilike', "%{$clean}%")
+                ->orWhere($numCol, 'ilike', "%{$clean}%")
                 ->orWhere('description', 'ilike', "%{$clean}%");
         })->orderByRaw(
             "ts_rank(ocr_text_tsv, websearch_to_tsquery('indonesian', ?)) DESC, created_at DESC",
@@ -98,7 +157,7 @@ class Document extends Model
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'aktif');
+        return $query->whereIn('status', ['active', 'aktif']);
     }
 
     public function scopeInRecycleBin(Builder $query): Builder
