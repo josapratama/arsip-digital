@@ -21,7 +21,7 @@ router.on("navigate", (event) => {
     // First page load: if localStorage has no locale yet, seed from server
     if (!localStorage.getItem("locale")) {
         const serverLocale = props.auth?.user?.locale ?? props.locale ?? "id";
-        if (["id", "en"].includes(serverLocale)) {
+        if (["id", "en", "ja"].includes(serverLocale)) {
             i18nState.locale = serverLocale;
             localStorage.setItem("locale", serverLocale);
         }

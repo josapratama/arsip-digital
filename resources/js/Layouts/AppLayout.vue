@@ -84,71 +84,76 @@ function clearToast() {
 // ── Topbar: dynamic page title + breadcrumb ───────────────────────────────────
 const pageConfig = computed(() => {
     const r = routeName.value;
-    const id = locale.value === "id";
+    const cur = locale.value;
+    const getT = (idText, enText, jaText) => {
+        if (cur === "id") return idText;
+        if (cur === "ja") return jaText || enText;
+        return enText;
+    };
     const map = {
-        dashboard: { title: id ? "Dasbor" : "Dashboard", crumbs: [] },
+        dashboard: { title: getT("Dasbor", "Dashboard", "ダッシュボード"), crumbs: [] },
         "documents.index": {
-            title: id ? "Arsip Dokumen" : "Document Archive",
+            title: getT("Arsip Dokumen", "Document Archive", "文書アーカイブ"),
             crumbs: [],
         },
         "documents.create": {
-            title: id ? "Unggah Dokumen" : "Upload Document",
+            title: getT("Unggah Dokumen", "Upload Document", "ドキュメントのアップロード"),
             crumbs: [
                 {
-                    label: id ? "Dokumen" : "Documents",
+                    label: getT("Dokumen", "Documents", "文書"),
                     href: route("documents.index"),
                 },
             ],
         },
         "documents.batch.create": {
-            title: id ? "Unggah Masal Dokumen" : "Batch Upload Documents",
+            title: getT("Unggah Masal Dokumen", "Batch Upload Documents", "ドキュメント一括アップロード"),
             crumbs: [
                 {
-                    label: id ? "Dokumen" : "Documents",
+                    label: getT("Dokumen", "Documents", "文書"),
                     href: route("documents.index"),
                 },
             ],
         },
         "documents.show": {
-            title: id ? "Detail Dokumen" : "Document Detail",
+            title: getT("Detail Dokumen", "Document Detail", "文書詳細"),
             crumbs: [
                 {
-                    label: id ? "Dokumen" : "Documents",
+                    label: getT("Dokumen", "Documents", "文書"),
                     href: route("documents.index"),
                 },
             ],
         },
         "documents.edit": {
-            title: id ? "Edit Dokumen" : "Edit Document",
+            title: getT("Edit Dokumen", "Edit Document", "ドキュメントを編集"),
             crumbs: [
                 {
-                    label: id ? "Dokumen" : "Documents",
+                    label: getT("Dokumen", "Documents", "文書"),
                     href: route("documents.index"),
                 },
             ],
         },
         "recycle-bin.index": {
-            title: id ? "Kotak Sampah" : "Recycle Bin",
+            title: getT("Kotak Sampah", "Recycle Bin", "ごみ箱"),
             crumbs: [],
         },
         "activity-log.index": {
-            title: id ? "Riwayat Aktivitas" : "Activity Log",
+            title: getT("Riwayat Aktivitas", "Activity Log", "アクティビティログ"),
             crumbs: [],
         },
         "admin.categories.index": {
-            title: id ? "Kategori Dokumen" : "Document Categories",
+            title: getT("Kategori Dokumen", "Document Categories", "文書カテゴリ"),
             crumbs: [],
         },
         "profile.edit": {
-            title: id ? "Profil Saya" : "My Profile",
+            title: getT("Profil Saya", "My Profile", "私のプロフィール"),
             crumbs: [],
         },
         "admin.site-settings.index": {
-            title: id ? "Pengaturan Halaman" : "Page Settings",
+            title: getT("Pengaturan Halaman", "Page Settings", "ページ設定"),
             crumbs: [],
         },
         "admin.users.index": {
-            title: id ? "Manajemen Pengguna" : "User Management",
+            title: getT("Manajemen Pengguna", "User Management", "ユーザー管理"),
             crumbs: [],
         },
     };
@@ -170,7 +175,8 @@ function toggleTheme() {
 
 // ── Locale toggle ─────────────────────────────────────────────────────────────
 function toggleLocale() {
-    const newLocale = locale.value === "id" ? "en" : "id";
+    const next = { id: "en", en: "ja", ja: "id" };
+    const newLocale = next[locale.value] || "id";
     setLocale(newLocale);
     router.patch(
         route("profile.preference"),
@@ -347,6 +353,19 @@ const showLogoutModal = ref(false);
                         >
                             EN
                         </button>
+                        <span class="text-slate-300 dark:text-slate-600">|</span>
+                        <button
+                            type="button"
+                            @click="setLocale('ja')"
+                            :class="[
+                                'px-2 py-0.5 rounded-md text-[11px] font-bold transition-all',
+                                locale === 'ja'
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                            ]"
+                        >
+                            JA
+                        </button>
                     </div>
                 </div>
 
@@ -449,12 +468,12 @@ const showLogoutModal = ref(false);
                         <!-- Universal Language Switcher Button (Always visible on mobile & desktop) -->
                         <button
                             @click="toggleLocale"
-                            :title="locale === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'"
+                            :title="locale === 'id' ? 'Switch to English' : (locale === 'en' ? 'Switch to Japanese' : 'Ganti ke Bahasa Indonesia')"
                             class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all shadow-xs"
                         >
                             <Globe class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                             <span class="font-bold text-xs tracking-wider uppercase font-mono">
-                                {{ locale === "id" ? "ID" : "EN" }}
+                                {{ locale.toUpperCase() }}
                             </span>
                         </button>
                         <button

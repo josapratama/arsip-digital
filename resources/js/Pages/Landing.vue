@@ -37,8 +37,8 @@ function toggleTheme() {
 }
 
 function toggleLocale() {
-    const next = locale.value === "id" ? "en" : "id";
-    setLocale(next);
+    const nextMap = { id: "en", en: "ja", ja: "id" };
+    setLocale(nextMap[locale.value] || "id");
 }
 
 const s = computed(() => {

@@ -17,7 +17,8 @@ function toggleTheme() {
 }
 
 function toggleLocale() {
-    setLocale(locale.value === 'id' ? 'en' : 'id');
+    const nextMap = { id: 'en', en: 'ja', ja: 'id' };
+    setLocale(nextMap[locale.value] || 'id');
 }
 
 const form = useForm({

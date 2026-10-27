@@ -3,6 +3,9 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "sync:i18n": "node scripts/sync-i18n.js arsip-digital resources/js/locales https://polyglot-hub.josapratama.com",
+        "prebuild": "npm run sync:i18n",
+        "predev": "npm run sync:i18n",
         "build": "vite build",
         "dev": "vite"
     },

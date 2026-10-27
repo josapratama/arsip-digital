@@ -221,6 +221,7 @@ function savePassword() {
                                             label: '🇮🇩 Bahasa Indonesia',
                                         },
                                         { value: 'en', label: '🇬🇧 English' },
+                                        { value: 'ja', label: '🇯🇵 日本語' },
                                     ]"
                                     :key="opt.value"
                                     class="flex items-center gap-2 flex-1 p-3 rounded-xl border-2 cursor-pointer transition-colors"

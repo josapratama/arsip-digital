@@ -20,7 +20,7 @@ class ProfileController extends Controller
             'name'     => 'required|string|max:255',
             'position' => 'nullable|string|max:100',
             'jabatan'  => 'nullable|string|max:100',
-            'locale'   => 'required|in:id,en',
+            'locale'   => 'required|in:id,en,ja',
             'theme'    => 'required|in:light,dark',
         ]);
 
@@ -46,7 +46,7 @@ class ProfileController extends Controller
     public function updatePreference(Request $request)
     {
         $request->validate([
-            'locale' => 'sometimes|in:id,en',
+            'locale' => 'sometimes|in:id,en,ja',
             'theme'  => 'sometimes|in:light,dark',
         ]);
 
