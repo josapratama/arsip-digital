@@ -42,4 +42,6 @@ RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache \
 
 EXPOSE 80 443 443/udp
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl -f http://localhost:80/ || exit 1
+
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
