@@ -1,6 +1,6 @@
 {
 	frankenphp
-	admin off
+	admin localhost:2019
 }
 
 :80 {
