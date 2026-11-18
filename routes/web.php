@@ -22,7 +22,9 @@ Route::middleware(['auth', 'set.locale'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Documents
+    // Documents & OCR
+    Route::get('/ocr-scanner', [OcrPreviewController::class, 'scanner'])->name('ocr.scanner');
+    Route::post('/documents/batch-ocr', [DocumentController::class, 'batchOcr'])->name('documents.batch-ocr');
     Route::get('/documents/export', [DocumentController::class, 'export'])->name('documents.export');
     Route::get('/documents/batch', [\App\Http\Controllers\DocumentBatchController::class, 'create'])->name('documents.batch.create');
     Route::post('/documents/batch', [\App\Http\Controllers\DocumentBatchController::class, 'store'])->name('documents.batch.store');

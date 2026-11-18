@@ -33,7 +33,7 @@ class OcrService
      * - Word Documents (.docx) -> Direct Native XML Extraction
      * - Plain Text (.txt, .csv, .rtf) -> Direct UTF-8 Reading
      */
-    public function extractText(string $filePath, ?string $originalName = null): array
+    public function extractText(string $filePath, ?string $originalName = null, int $rotation = 0): array
     {
         if (!file_exists($filePath)) {
             return [
@@ -82,7 +82,7 @@ class OcrService
             return $this->extractWithGoogleVision($filePath);
         }
 
-        return $this->extractSingleImageWithTesseract($filePath);
+        return $this->extractSingleImageWithTesseract($filePath, $rotation);
     }
 
     /**
@@ -409,13 +409,13 @@ class OcrService
     /**
      * Extract text from a single image using preprocessing & Tesseract
      */
-    protected function extractSingleImageWithTesseract(string $filePath): array
+    protected function extractSingleImageWithTesseract(string $filePath, int $rotation = 0): array
     {
         $preprocessedPath = null;
 
         try {
-            // Intelligent preprocessing: auto-orient, shadow removal, contrast enhancement
-            $preprocessedPath = $this->preprocessImage($filePath);
+            // Intelligent preprocessing: auto-orient, manual rotation, shadow removal, contrast enhancement
+            $preprocessedPath = $this->preprocessImage($filePath, $rotation);
 
             $pathToScan = ($preprocessedPath && file_exists($preprocessedPath))
                 ? $preprocessedPath
@@ -477,10 +477,11 @@ class OcrService
     /**
      * Preprocess image for OCR:
      * - Auto-orient (correct camera rotation via EXIF)
+     * - Auto-orient (correct camera rotation via EXIF) & manual rotation (90, 180, 270)
      * - Shadow removal & background illumination normalization
      * - Contrast enhancement
      */
-    protected function preprocessImage(string $filePath): ?string
+    protected function preprocessImage(string $filePath, int $rotation = 0): ?string
     {
         $tempPath = tempnam(sys_get_temp_dir(), 'ocr_pre_') . '.png';
 
@@ -491,8 +492,10 @@ class OcrService
             $escapedInput = escapeshellarg($filePath);
             $escapedOutput = escapeshellarg($tempPath);
 
+            $rotateArg = in_array($rotation, [90, 180, 270]) ? " -rotate {$rotation} " : " ";
+
             // -auto-orient fixes rotated smartphone photos before running filters
-            $cmd = "{$imBin} {$escapedInput} -auto-orient -colorspace Gray \\( +clone -blur 0x25 \\) -compose Divide -composite -linear-stretch 1%x1% {$escapedOutput} 2>&1";
+            $cmd = "{$imBin} {$escapedInput} -auto-orient{$rotateArg}-colorspace Gray \\( +clone -blur 0x25 \\) -compose Divide -composite -linear-stretch 1%x1% {$escapedOutput} 2>&1";
             exec($cmd, $out, $ret);
 
             if ($ret === 0 && file_exists($tempPath) && filesize($tempPath) > 0) {
@@ -724,6 +727,31 @@ class OcrService
             $cleanTitle = preg_replace('/[^\w\s,.()\-\/]/', '', $cleanTitle);
             $res['title'] = mb_substr(trim($cleanTitle), 0, 120);
         }
+
+        // 4. Extract Entities (NIK, Money, Phone, Email)
+        $niks = [];
+        if (preg_match_all('/\b[1-9]\d{15}\b/', $text, $nMatches)) {
+            $niks = array_values(array_unique($nMatches[0]));
+        }
+        $res['niks'] = array_slice($niks, 0, 10);
+
+        $money = [];
+        if (preg_match_all('/\b(?:Rp\.?|IDR)\s?[\d.,]+(?:\s*,-)?\b/i', $text, $mMatches)) {
+            $money = array_values(array_unique(array_map('trim', $mMatches[0])));
+        }
+        $res['money_amounts'] = array_slice($money, 0, 10);
+
+        $phones = [];
+        if (preg_match_all('/\b(?:08\d{8,11}|628\d{8,11})\b/', $text, $pMatches)) {
+            $phones = array_values(array_unique($pMatches[0]));
+        }
+        $res['phone_numbers'] = array_slice($phones, 0, 5);
+
+        $emails = [];
+        if (preg_match_all('/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/', $text, $eMatches)) {
+            $emails = array_values(array_unique($eMatches[0]));
+        }
+        $res['emails'] = array_slice($emails, 0, 5);
 
         return $res;
     }

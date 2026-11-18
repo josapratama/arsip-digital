@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\Category;
 use App\Models\ActivityLog;
 use App\Models\SiteSetting;
+use App\Jobs\ProcessDocumentOcrJob;
 use App\Services\OcrService;
 use App\Services\KlasifikasiKemendagriService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -46,6 +47,13 @@ class DocumentController extends Controller
         if ($request->filled('date_to')) {
             $query->whereDate('document_date', '<=', $request->date_to);
         }
+        if ($request->filled('ocr_status')) {
+            if ($request->ocr_status === 'completed') {
+                $query->where('ocr_processed', true);
+            } elseif ($request->ocr_status === 'pending') {
+                $query->where('ocr_processed', false);
+            }
+        }
 
         if (!$request->filled('q')) {
             $query->latest();
@@ -74,9 +82,10 @@ class DocumentController extends Controller
                 'document_date' => $doc->document_date?->format('d M Y'),
                 'uploader' => $doc->uploader?->name,
                 'ocr_processed' => $doc->ocr_processed,
+                'ocr_snippet' => $request->filled('q') ? $this->extractOcrSnippet($doc->ocr_text, $request->q) : null,
                 'created_at' => $doc->created_at->format('d M Y'),
             ]),
-            'filters' => $request->only(['q', 'category', 'subcategory', 'date_from', 'date_to']),
+            'filters' => $request->only(['q', 'category', 'subcategory', 'date_from', 'date_to', 'ocr_status']),
             'categories' => Category::root()->active()->with('children:id,name,parent_id')->get(['id', 'name', 'name_en', 'color', 'icon']),
             'can_create' => auth()->user()->can('create', Document::class),
         ]);
@@ -393,5 +402,54 @@ class DocumentController extends Controller
 
             fclose($handle);
         }, 200, $headers);
+    }
+
+    /**
+     * Batch re-process OCR for selected documents via background queue worker.
+     */
+    public function batchOcr(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:documents,id',
+        ]);
+
+        $documents = Document::whereIn('id', $request->ids)->get();
+        $dispatched = 0;
+
+        foreach ($documents as $doc) {
+            if (auth()->user()->can('update', $doc)) {
+                ProcessDocumentOcrJob::dispatch($doc);
+                $dispatched++;
+            }
+        }
+
+        ActivityLog::record('ocr', "Menjadwalkan pemrosesan OCR masal untuk {$dispatched} dokumen.");
+
+        return back()->with('success', "{$dispatched} dokumen berhasil dijadwalkan untuk pemrosesan OCR latar belakang.");
+    }
+
+    /**
+     * Extract contextual snippet around keyword match in OCR text.
+     */
+    private function extractOcrSnippet(?string $text, ?string $keyword, int $radius = 70): ?string
+    {
+        if (empty($text) || empty($keyword)) {
+            return null;
+        }
+
+        $cleanText = preg_replace('/\s+/', ' ', $text);
+        $pos = mb_stripos($cleanText, $keyword);
+        if ($pos === false) {
+            return null;
+        }
+
+        $start = max(0, $pos - $radius);
+        $length = mb_strlen($keyword) + ($radius * 2);
+        $snippet = mb_substr($cleanText, $start, $length);
+        $prefix = $start > 0 ? '...' : '';
+        $suffix = ($start + $length) < mb_strlen($cleanText) ? '...' : '';
+
+        return $prefix . trim($snippet) . $suffix;
     }
 }

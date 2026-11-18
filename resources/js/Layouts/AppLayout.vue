@@ -4,6 +4,7 @@ import { Link, usePage, router } from "@inertiajs/vue3";
 import {
     LayoutDashboard,
     FolderArchive,
+    ScanText,
     FolderTree,
     Trash2,
     ClipboardList,
@@ -132,6 +133,15 @@ const pageConfig = computed(() => {
                 },
             ],
         },
+        "ocr.scanner": {
+            title: getT("Pemindai OCR Cepat", "Quick OCR Scanner", "OCRスキャナー"),
+            crumbs: [
+                {
+                    label: getT("Dokumen", "Documents", "文書"),
+                    href: route("documents.index"),
+                },
+            ],
+        },
         "recycle-bin.index": {
             title: getT("Kotak Sampah", "Recycle Bin", "ごみ箱"),
             crumbs: [],
@@ -202,6 +212,12 @@ const navItems = computed(() => {
             href: route("documents.index"),
             icon: FolderArchive,
             current: route().current("documents.*"),
+        },
+        {
+            name: id ? "Pemindai OCR" : "OCR Scanner",
+            href: route("ocr.scanner"),
+            icon: ScanText,
+            current: route().current("ocr.*"),
         },
         {
             name: id ? "Kotak Sampah" : "Recycle Bin",

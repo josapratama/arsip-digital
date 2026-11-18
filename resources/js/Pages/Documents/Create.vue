@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {
@@ -74,6 +74,26 @@ watch(
         form.subcategory_id = "";
     },
 );
+
+onMounted(() => {
+    try {
+        const stored = sessionStorage.getItem("ocr_prefill");
+        if (stored) {
+            const data = JSON.parse(stored);
+            sessionStorage.removeItem("ocr_prefill");
+            if (data.title) form.title = data.title;
+            if (data.nomor_surat) form.nomor_surat = data.nomor_surat;
+            if (data.document_date) form.document_date = data.document_date;
+            if (data.kode_klasifikasi) form.kode_klasifikasi = data.kode_klasifikasi;
+            if (data.ocr_text) {
+                form.ocr_text = data.ocr_text;
+                ocrDone.value = true;
+            }
+        }
+    } catch (e) {
+        console.warn("Could not read ocr_prefill", e);
+    }
+});
 
 function handleFile(file) {
     if (!file) return;

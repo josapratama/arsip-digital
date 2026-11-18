@@ -15,7 +15,14 @@ import {
     ChevronRight,
     Download,
     Printer,
+    ScanText,
+    CheckSquare,
+    Square,
+    Loader2,
+    CheckCircle2,
+    Sparkles,
 } from "lucide-vue-next";
+import axios from "axios";
 import { useI18n } from "@/useI18n.js";
 
 const props = defineProps({
@@ -32,7 +39,68 @@ const selectedCategory = ref(props.filters?.category ?? "");
 const selectedSubcategory = ref(props.filters?.subcategory ?? "");
 const dateFrom = ref(props.filters?.date_from ?? "");
 const dateTo = ref(props.filters?.date_to ?? "");
+const ocrStatus = ref(props.filters?.ocr_status ?? "");
 const showFilters = ref(false);
+
+// Batch OCR Selection
+const selectedDocIds = ref([]);
+const isBatchOcrLoading = ref(false);
+const batchMessage = ref("");
+
+const allCurrentPageSelected = computed(() => {
+    if (!props.documents.data || props.documents.data.length === 0) return false;
+    return props.documents.data.every((doc) => selectedDocIds.value.includes(doc.id));
+});
+
+function toggleSelectAll() {
+    if (allCurrentPageSelected.value) {
+        selectedDocIds.value = [];
+    } else {
+        selectedDocIds.value = props.documents.data.map((doc) => doc.id);
+    }
+}
+
+function toggleSelectDoc(id, e) {
+    if (e) e.stopPropagation();
+    if (selectedDocIds.value.includes(id)) {
+        selectedDocIds.value = selectedDocIds.value.filter((item) => item !== id);
+    } else {
+        selectedDocIds.value.push(id);
+    }
+}
+
+async function runBatchOcr() {
+    if (selectedDocIds.value.length === 0) return;
+    isBatchOcrLoading.value = true;
+    batchMessage.value = "";
+    try {
+        const res = await axios.post(route("documents.batch-ocr"), {
+            ids: selectedDocIds.value,
+        });
+        batchMessage.value =
+            res.data?.message ||
+            (locale.value === "id"
+                ? "Proses OCR berhasil dijadwalkan!"
+                : "Batch OCR scheduled successfully!");
+        selectedDocIds.value = [];
+        router.reload({ preserveScroll: true });
+        setTimeout(() => {
+            batchMessage.value = "";
+        }, 3500);
+    } catch (err) {
+        console.error("Batch OCR error:", err);
+        batchMessage.value =
+            err.response?.data?.message ||
+            (locale.value === "id"
+                ? "Gagal memproses batch OCR."
+                : "Failed batch OCR.");
+        setTimeout(() => {
+            batchMessage.value = "";
+        }, 3500);
+    } finally {
+        isBatchOcrLoading.value = false;
+    }
+}
 
 const selectedCategoryData = computed(() =>
     props.categories?.find((c) => c.id == selectedCategory.value),
@@ -45,6 +113,7 @@ const exportUrl = computed(() => {
         subcategory: selectedSubcategory.value || undefined,
         date_from: dateFrom.value || undefined,
         date_to: dateTo.value || undefined,
+        ocr_status: ocrStatus.value || undefined,
     });
 });
 
@@ -61,6 +130,7 @@ function applyFilters() {
             subcategory: selectedSubcategory.value || undefined,
             date_from: dateFrom.value || undefined,
             date_to: dateTo.value || undefined,
+            ocr_status: ocrStatus.value || undefined,
         },
         { preserveScroll: true },
     );
@@ -72,6 +142,7 @@ function resetFilters() {
     selectedSubcategory.value = "";
     dateFrom.value = "";
     dateTo.value = "";
+    ocrStatus.value = "";
     applyFilters();
 }
 
@@ -201,7 +272,7 @@ const colorVariants = {
             <!-- Expandable filters -->
             <div
                 v-if="showFilters"
-                class="px-4 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+                class="px-4 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"
             >
                 <div>
                     <label
@@ -251,6 +322,21 @@ const colorVariants = {
                     <label
                         class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5"
                     >
+                        {{ t("Status OCR", "OCR Status") }}
+                    </label>
+                    <select
+                        v-model="ocrStatus"
+                        class="w-full text-sm px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                        <option value="">{{ t("Semua Status OCR", "All OCR Status") }}</option>
+                        <option value="completed">{{ t("Sudah Diekstrak OCR", "OCR Completed") }}</option>
+                        <option value="pending">{{ t("Belum Diekstrak OCR", "OCR Pending") }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label
+                        class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5"
+                    >
                         {{ t("Dari Tanggal", "Date From") }}
                     </label>
                     <input
@@ -271,20 +357,86 @@ const colorVariants = {
                         class="w-full text-sm px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                 </div>
-                <div class="sm:col-span-2 lg:col-span-4 flex gap-2 justify-end">
+                <div class="sm:col-span-2 lg:col-span-5 flex gap-2 justify-end">
                     <button
                         @click="resetFilters"
-                        class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                     >
                         {{ t("Reset", "Reset") }}
                     </button>
                     <button
                         @click="applyFilters"
-                        class="px-4 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+                        class="px-4 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
                     >
                         {{ t("Terapkan", "Apply") }}
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Toast Feedback Batch OCR -->
+        <transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 -translate-y-2"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100 translate-y-0"
+            leave-to-class="opacity-0 -translate-y-2"
+        >
+            <div
+                v-if="batchMessage"
+                class="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-900 text-white shadow-xl border border-slate-700 text-sm"
+            >
+                <CheckCircle2 class="w-4 h-4 text-emerald-400" />
+                <span>{{ batchMessage }}</span>
+            </div>
+        </transition>
+
+        <!-- Batch Action Toolbar (Muncul saat dokumen dipilih) -->
+        <div
+            v-if="documents.data.length > 0"
+            class="flex flex-wrap items-center justify-between gap-3 mb-4 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs"
+        >
+            <div class="flex items-center gap-3">
+                <button
+                    type="button"
+                    @click="toggleSelectAll"
+                    class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer"
+                >
+                    <component
+                        :is="allCurrentPageSelected ? CheckSquare : Square"
+                        class="w-4 h-4 text-emerald-600 dark:text-emerald-400"
+                    />
+                    <span>{{ allCurrentPageSelected ? t('Batalkan Semua', 'Deselect All') : t('Pilih Semua Dokumen', 'Select All') }}</span>
+                </button>
+
+                <span
+                    v-if="selectedDocIds.length > 0"
+                    class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+                >
+                    {{ selectedDocIds.length }} {{ t('terpilih', 'selected') }}
+                </span>
+            </div>
+
+            <div v-if="selectedDocIds.length > 0" class="flex items-center gap-2">
+                <button
+                    type="button"
+                    @click="runBatchOcr"
+                    :disabled="isBatchOcrLoading"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+                >
+                    <Loader2 v-if="isBatchOcrLoading" class="w-3.5 h-3.5 animate-spin" />
+                    <ScanText v-else class="w-3.5 h-3.5" />
+                    <span>{{ t('Jadwalkan OCR Ulang Terpilih', 'Batch Reprocess OCR') }} ({{ selectedDocIds.length }})</span>
+                </button>
+
+                <button
+                    type="button"
+                    @click="selectedDocIds = []"
+                    class="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1 cursor-pointer"
+                >
+                    {{ t('Batal', 'Clear') }}
+                </button>
             </div>
         </div>
 
@@ -313,99 +465,145 @@ const colorVariants = {
             v-else
             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
         >
-            <Link
+            <div
                 v-for="doc in documents.data"
                 :key="doc.id"
-                :href="route('documents.show', doc.id)"
-                class="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md transition-all overflow-hidden"
+                class="relative group bg-white dark:bg-slate-800 rounded-2xl border transition-all overflow-hidden flex flex-col justify-between"
+                :class="[
+                    selectedDocIds.includes(doc.id)
+                        ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-md'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md'
+                ]"
             >
-                <!-- File type indicator -->
-                <div
-                    class="h-2 w-full"
-                    :class="{
-                        'bg-primary-500': doc.is_image,
-                        'bg-rose-500': doc.is_pdf,
-                        'bg-blue-600': doc.is_word,
-                        'bg-amber-500': doc.is_text,
-                        'bg-slate-400': !doc.is_image && !doc.is_pdf && !doc.is_word && !doc.is_text,
-                    }"
-                ></div>
-                <div class="p-4">
-                    <div class="flex items-start gap-3 mb-3">
+                <Link
+                    :href="route('documents.show', doc.id)"
+                    class="flex-1 block"
+                >
+                    <!-- File type indicator -->
+                    <div
+                        class="h-2 w-full"
+                        :class="{
+                            'bg-primary-500': doc.is_image,
+                            'bg-rose-500': doc.is_pdf,
+                            'bg-blue-600': doc.is_word,
+                            'bg-amber-500': doc.is_text,
+                            'bg-slate-400': !doc.is_image && !doc.is_pdf && !doc.is_word && !doc.is_text,
+                        }"
+                    ></div>
+                    <div class="p-4">
+                        <div class="flex items-start gap-3 mb-3">
+                            <div
+                                class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                :class="{
+                                    'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400': doc.is_image,
+                                    'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400': doc.is_pdf,
+                                    'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400': doc.is_word,
+                                    'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400': doc.is_text,
+                                    'bg-slate-100 dark:bg-slate-700 text-slate-500': !doc.is_image && !doc.is_pdf && !doc.is_word && !doc.is_text,
+                                }"
+                            >
+                                <Image
+                                    v-if="doc.is_image"
+                                    class="w-5 h-5"
+                                />
+                                <span v-else-if="doc.is_word" class="font-bold text-sm">W</span>
+                                <FileText
+                                    v-else-if="doc.is_text"
+                                    class="w-5 h-5"
+                                />
+                                <File
+                                    v-else
+                                    class="w-5 h-5 text-rose-600 dark:text-rose-400"
+                                />
+                            </div>
+                            <div class="flex-1 min-w-0 pr-6">
+                                <p
+                                    class="text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 leading-snug"
+                                >
+                                    {{ doc.title }}
+                                </p>
+                                <p
+                                    v-if="doc.document_number || doc.nomor_surat"
+                                    class="text-xs text-slate-400 mt-0.5 truncate"
+                                >
+                                    {{ doc.document_number || doc.nomor_surat }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- OCR Snippet Match Card (jika sedang dicari) -->
                         <div
-                            class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                            :class="{
-                                'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400': doc.is_image,
-                                'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400': doc.is_pdf,
-                                'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400': doc.is_word,
-                                'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400': doc.is_text,
-                                'bg-slate-100 dark:bg-slate-700 text-slate-500': !doc.is_image && !doc.is_pdf && !doc.is_word && !doc.is_text,
-                            }"
+                            v-if="doc.ocr_snippet"
+                            class="mb-3 p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] leading-relaxed text-slate-700 dark:text-slate-300"
                         >
-                            <Image
-                                v-if="doc.is_image"
-                                class="w-5 h-5"
-                            />
-                            <span v-else-if="doc.is_word" class="font-bold text-sm">W</span>
-                            <FileText
-                                v-else-if="doc.is_text"
-                                class="w-5 h-5"
-                            />
-                            <File
-                                v-else
-                                class="w-5 h-5 text-rose-600 dark:text-rose-400"
-                            />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p
-                                class="text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 leading-snug"
-                            >
-                                {{ doc.title }}
-                            </p>
-                            <p
-                                v-if="doc.document_number || doc.nomor_surat"
-                                class="text-xs text-slate-400 mt-0.5 truncate"
-                            >
-                                {{ doc.document_number || doc.nomor_surat }}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span
-                                v-if="doc.classification_code || doc.kode_klasifikasi"
-                                class="inline-block px-1.5 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60"
-                                :title="'Klasifikasi Permendagri: ' + (doc.classification_code || doc.kode_klasifikasi)"
-                            >
-                                {{ doc.classification_code || doc.kode_klasifikasi }}
+                            <span class="font-bold text-amber-700 dark:text-amber-400 uppercase text-[10px] tracking-wide block mb-0.5">
+                                {{ t("Kutipan Teks Dokumen:", "Document Text Match:") }}
                             </span>
-                            <span
-                                :class="[
-                                    'inline-block px-2 py-0.5 rounded-md text-xs font-medium',
-                                    colorVariants[doc.category?.color] ||
-                                        colorVariants.blue,
-                                ]"
-                            >
-                                {{ doc.category?.name }}
-                            </span>
+                            <span class="italic font-mono">"...{{ doc.ocr_snippet }}..."</span>
                         </div>
-                        <div
-                            class="flex items-center justify-between text-xs text-slate-400"
-                        >
-                            <span>{{
-                                doc.document_date || doc.created_at
-                            }}</span>
-                            <span class="flex items-center gap-1">
+
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-1.5 flex-wrap">
                                 <span
-                                    v-if="doc.ocr_processed"
-                                    class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"
-                                ></span>
-                                {{ doc.file_size_formatted }}
-                            </span>
+                                    v-if="doc.classification_code || doc.kode_klasifikasi"
+                                    class="inline-block px-1.5 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60"
+                                    :title="'Klasifikasi Permendagri: ' + (doc.classification_code || doc.kode_klasifikasi)"
+                                >
+                                    {{ doc.classification_code || doc.kode_klasifikasi }}
+                                </span>
+                                <span
+                                    :class="[
+                                        'inline-block px-2 py-0.5 rounded-md text-xs font-medium',
+                                        colorVariants[doc.category?.color] ||
+                                            colorVariants.blue,
+                                    ]"
+                                >
+                                    {{ doc.category?.name }}
+                                </span>
+                            </div>
+                            <div
+                                class="flex items-center justify-between text-xs text-slate-400 pt-1"
+                            >
+                                <span>{{
+                                    doc.document_date || doc.created_at
+                                }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        v-if="doc.ocr_processed"
+                                        class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                        :title="t('Sudah diproses OCR', 'OCR Processed')"
+                                    >
+                                        <CheckCircle2 class="w-3 h-3 text-emerald-500" />
+                                        <span>OCR</span>
+                                    </span>
+                                    <span
+                                        v-else
+                                        class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700/60 text-slate-500"
+                                        :title="t('Belum diproses OCR', 'Not OCR Processed')"
+                                    >
+                                        <span>Pending</span>
+                                    </span>
+                                    <span>{{ doc.file_size_formatted }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </Link>
+                </Link>
+
+                <!-- Checkbox Seleksi Batch (Top Right Card) -->
+                <button
+                    type="button"
+                    @click="(e) => toggleSelectDoc(doc.id, e)"
+                    class="absolute top-4 right-3 p-1 rounded-md text-slate-400 hover:text-emerald-600 transition cursor-pointer z-10"
+                    :title="t('Pilih dokumen untuk proses masal', 'Select document for batch action')"
+                >
+                    <component
+                        :is="selectedDocIds.includes(doc.id) ? CheckSquare : Square"
+                        class="w-4.5 h-4.5"
+                        :class="selectedDocIds.includes(doc.id) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300 dark:text-slate-600'"
+                    />
+                </button>
+            </div>
         </div>
 
         <!-- Pagination -->

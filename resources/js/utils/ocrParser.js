@@ -149,3 +149,38 @@ export function parseOcrText(text) {
 
     return result;
 }
+
+/**
+ * Extract structured entities from OCR transcript text
+ * (NIK, Nominal Uang / Rupiah, Nomor Telepon / WA, Email)
+ * @param {string} text
+ * @returns {{ niks: string[], moneyAmounts: string[], phoneNumbers: string[], emails: string[] }}
+ */
+export function extractEntities(text) {
+    if (!text || typeof text !== 'string') {
+        return { niks: [], moneyAmounts: [], phoneNumbers: [], emails: [] };
+    }
+
+    // 1. NIK (16 digits starting with valid province code 1-9)
+    const rawNiks = text.match(/\b[1-9]\d{15}\b/g) || [];
+    const niks = [...new Set(rawNiks)];
+
+    // 2. Rupiah / Money amounts (e.g. Rp. 15.000.000, Rp 500,000,00, IDR 1.250.000)
+    const rawMoney = text.match(/\b(?:Rp\.?|IDR)\s?[\d.,]+(?:\s*,-)?\b/gi) || [];
+    const moneyAmounts = [...new Set(rawMoney.map(m => m.trim()))];
+
+    // 3. Phone / WhatsApp (Indonesian 08xx or +628xx / 628xx)
+    const rawPhones = text.match(/\b(?:\+?62|0)8[1-9]\d{6,10}\b/g) || [];
+    const phoneNumbers = [...new Set(rawPhones)];
+
+    // 4. Email addresses
+    const rawEmails = text.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g) || [];
+    const emails = [...new Set(rawEmails.map(e => e.toLowerCase()))];
+
+    return {
+        niks,
+        moneyAmounts,
+        phoneNumbers,
+        emails,
+    };
+}
