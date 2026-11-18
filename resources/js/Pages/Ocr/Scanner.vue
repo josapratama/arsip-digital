@@ -491,7 +491,7 @@ onUnmounted(() => {
                 @dragover.prevent="isDragging = true"
                 @dragleave.prevent="isDragging = false"
                 @drop.prevent="onDrop"
-                class="relative border-2 border-dashed rounded-3xl p-12 transition-all duration-200 text-center flex flex-col items-center justify-center cursor-pointer min-h-[360px]"
+                class="relative border-2 border-dashed rounded-3xl p-6 sm:p-12 transition-all duration-200 text-center flex flex-col items-center justify-center cursor-pointer min-h-[300px] sm:min-h-[360px]"
                 :class="[
                     isDragging
                         ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 scale-[1.005]'
@@ -505,19 +505,19 @@ onUnmounted(() => {
                     @change="onFileInput"
                 />
 
-                <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-5 ring-1 ring-emerald-500/20 shadow-inner">
-                    <Upload class="w-10 h-10 animate-pulse" />
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 sm:mb-5 ring-1 ring-emerald-500/20 shadow-inner">
+                    <Upload class="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
                 </div>
 
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                <h3 class="text-base sm:text-lg font-semibold text-slate-900 dark:text-white mb-2">
                     {{ isId ? 'Tarik & Letakkan Berkas Dokumen di Sini' : 'Drag & Drop Document File Here' }}
                 </h3>
-                <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-6">
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mb-6 px-2">
                     {{ isId ? 'Mendukung foto/pindaian kamera (.jpg, .png, .webp), dokumen PDF, DOCX, dan file teks. Teks akan otomatis diekstraksi.' : 'Supports camera photos (.jpg, .png), PDF, DOCX, and text files. Text will be automatically extracted.' }}
                 </p>
 
-                <div class="flex flex-wrap items-center justify-center gap-3 relative z-20">
-                    <label class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-md shadow-emerald-500/20 cursor-pointer transition">
+                <div class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-20">
+                    <label class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs sm:text-sm shadow-md shadow-emerald-500/20 cursor-pointer transition">
                         {{ isId ? 'Pilih Berkas Komputer' : 'Browse Computer Files' }}
                         <input
                             type="file"
@@ -530,7 +530,7 @@ onUnmounted(() => {
                     <button
                         type="button"
                         @click.stop="openCameraModal"
-                        class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 font-medium text-sm transition flex items-center gap-2 cursor-pointer"
+                        class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 font-medium text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer"
                     >
                         <Camera class="w-4 h-4 text-emerald-500" />
                         <span>{{ isId ? 'Gunakan Kamera / HP' : 'Use Camera / Mobile' }}</span>
@@ -650,7 +650,7 @@ onUnmounted(() => {
                             <span v-if="isImageFile">{{ rotationDeg }}° &bull; {{ Math.round(zoomLevel * 100) }}%</span>
                         </div>
 
-                        <div class="relative bg-slate-900/5 dark:bg-slate-950 min-h-[460px] max-h-[640px] overflow-auto flex items-center justify-center p-4">
+                        <div class="relative bg-slate-900/5 dark:bg-slate-950 min-h-[260px] sm:min-h-[380px] lg:min-h-[480px] max-h-[640px] overflow-auto flex items-center justify-center p-4">
                             <!-- Image Viewer with dynamic zoom & rotation -->
                             <div
                                 v-if="isImageFile && filePreview"
@@ -662,7 +662,7 @@ onUnmounted(() => {
                                 <img
                                     :src="filePreview"
                                     alt="Pratinjau Berkas"
-                                    class="max-w-full max-h-[560px] object-contain rounded-lg shadow-md"
+                                    class="max-w-full max-h-[520px] object-contain rounded-lg shadow-md"
                                 />
                             </div>
 
@@ -670,7 +670,7 @@ onUnmounted(() => {
                             <iframe
                                 v-else-if="isPdfFile && filePreview"
                                 :src="filePreview"
-                                class="w-full h-[560px] rounded-lg border-0"
+                                class="w-full h-[320px] sm:h-[460px] lg:h-[560px] rounded-lg border-0"
                             />
 
                             <!-- Non-previewable document -->
@@ -922,7 +922,7 @@ onUnmounted(() => {
                         </div>
 
                         <!-- Camera Viewport with Viewfinder Overlay -->
-                        <div class="relative bg-black flex items-center justify-center min-h-[380px] max-h-[500px] overflow-hidden">
+                        <div class="relative bg-black flex items-center justify-center min-h-[280px] sm:min-h-[380px] max-h-[500px] overflow-hidden">
                             <video
                                 ref="videoRef"
                                 autoplay
@@ -932,19 +932,19 @@ onUnmounted(() => {
                             ></video>
 
                             <!-- Document Guide Viewfinder Grid -->
-                            <div class="absolute inset-8 border-2 border-emerald-400/60 border-dashed rounded-2xl pointer-events-none flex flex-col justify-between p-4">
+                            <div class="absolute inset-4 sm:inset-8 border-2 border-emerald-400/60 border-dashed rounded-2xl pointer-events-none flex flex-col justify-between p-3 sm:p-4">
                                 <div class="flex justify-between">
-                                    <div class="w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg"></div>
-                                    <div class="w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg"></div>
+                                    <div class="w-5 h-5 sm:w-6 sm:h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg"></div>
+                                    <div class="w-5 h-5 sm:w-6 sm:h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg"></div>
                                 </div>
                                 <div class="text-center">
-                                    <span class="px-3 py-1 rounded-full bg-slate-900/70 text-emerald-300 text-xs font-medium tracking-wide">
+                                    <span class="px-2.5 sm:px-3 py-1 rounded-full bg-slate-900/80 text-emerald-300 text-[11px] sm:text-xs font-medium tracking-wide">
                                         {{ isId ? 'Arahkan dokumen ke dalam bingkai' : 'Align document inside the frame' }}
                                     </span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <div class="w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg"></div>
-                                    <div class="w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-lg"></div>
+                                    <div class="w-5 h-5 sm:w-6 sm:h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg"></div>
+                                    <div class="w-5 h-5 sm:w-6 sm:h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-lg"></div>
                                 </div>
                             </div>
 
