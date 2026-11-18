@@ -37,11 +37,14 @@ RUN composer dump-autoload --optimize \
     && npm run build
 
 # Fix permissions
-RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache \
+RUN mkdir -p /app/storage/framework/cache /app/storage/framework/sessions /app/storage/framework/views /app/storage/logs /app/storage/app/public /app/bootstrap/cache /app/database \
+    && touch /app/database/database.sqlite \
+    && chown -R www-data:www-data /app/storage /app/bootstrap/cache /app/database \
+    && sed -i 's/\r$//' /app/docker-entrypoint.sh \
     && chmod +x /app/docker-entrypoint.sh
 
 EXPOSE 80 443 443/udp
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl -f http://localhost:80/ || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl -f http://localhost:80/up || exit 1
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
